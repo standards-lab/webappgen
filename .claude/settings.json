@@ -1,0 +1,13 @@
+{
+  "plansDirectory": "./.claude/plans",
+  "permissions": {
+    "allow": [
+      "Bash(mise run:*)",
+      "Bash(mise tasks:*)",
+      "Bash(pnpm install:*)",
+      "Bash(pnpm list:*)",
+      "Bash(pnpm outdated:*)",
+      "Skill(marathon:marathon)"
+    ]
+  }
+}

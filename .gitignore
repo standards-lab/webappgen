@@ -1,0 +1,19 @@
+# marathon working files.
+.claude/plans/
+.claude/briefs/
+
+# Per-machine mise overrides.
+mise.local.toml
+
+node_modules
+# The build: only a release tag's tree carries it.
+dist/
+# A pack of the build.
+*.tgz
+
+# Editor and OS.
+*.swp
+*~
+.vscode/
+.idea/
+.DS_Store
