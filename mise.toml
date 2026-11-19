@@ -1,0 +1,86 @@
+# Adapted from go-cli-sdk-template (a4d314c): template/mise.toml, on one module.
+# Adapted from web-app-sdk (fbaba50): mise.toml, its settings, preflight, install, and lint tasks.
+# Tasks never install a missing tool; mise run install is the one task that reads the network.
+[settings]
+task.run_auto_install = false
+
+# The CLI's toolchain.
+[tools]
+actionlint = "1.7.12"
+go = "1.27.4"
+golangci-lint = "2.15.0"
+jq = "1.8.2"
+shellcheck = "0.11.0"
+
+# The module is built alone, never in a workspace a parent directory holds.
+[env]
+GOWORK = "off"
+
+[tasks.preflight]
+description = "Fail naming mise run install when a tool or module the tasks need is missing"
+hide = true
+run = "scripts/preflight.sh"
+
+[tasks.install]
+description = "Install the pins and the module's requirements; reads the network"
+run = ["mise install", "go mod download"]
+
+# vet reads the integration suite too, so it compiles and lints with the rest.
+[tasks.vet]
+description = "Build, vet, and check the format, fixes, and go.mod; writes nothing"
+depends = ["preflight"]
+run = '''
+set -eu
+go build ./...
+go vet ./...
+go vet -tags integration ./...
+unformatted=$(gofmt -l .)
+if [ -n "$unformatted" ]; then echo "gofmt: unformatted files:"; echo "$unformatted"; exit 1; fi
+go fix -diff ./...
+go fix -tags integration -diff ./...
+go mod tidy -diff
+'''
+
+[tasks.lint]
+description = "Run the linters: golangci-lint, shellcheck, and actionlint"
+depends = ["lint:go", "lint:shell", "lint:workflows"]
+
+[tasks."lint:go"]
+description = "Lint the Go source with golangci-lint, the integration suite included"
+depends = ["preflight"]
+run = ["golangci-lint run ./...", "golangci-lint run --build-tags integration ./..."]
+
+[tasks."lint:shell"]
+description = "Shellcheck the scripts"
+depends = ["preflight"]
+run = "shellcheck scripts/*.sh"
+
+# actionlint shellchecks each run: block too, with the shellcheck pinned above.
+[tasks."lint:workflows"]
+description = "Lint the GitHub Actions workflows with actionlint"
+depends = ["preflight"]
+run = "actionlint"
+
+[tasks."test:unit"]
+description = "Run the unit tier"
+depends = ["preflight"]
+run = "go test -race ./..."
+
+# The integration tier runs the built CLI as a subprocess, one shot at a time.
+[tasks."test:integration"]
+description = "Run the integration tier against the built CLI"
+depends = ["preflight"]
+run = "go test -race -count=1 -tags integration ./integration/"
+
+[tasks.check]
+description = "Run every check: vet, lint, and the unit and integration tiers; reads no network; writes nothing"
+depends = ["vet", "lint", "test:unit", "test:integration"]
+
+[tasks.fmt]
+description = "Format all Go source"
+run = "gofmt -w ."
+
+[tasks.currency]
+description = "Report the go directive, each direct requirement, mise tool, and action pin behind its latest, exiting nonzero if any"
+run = "scripts/currency.sh"
+quiet = true

@@ -1,0 +1,25 @@
+# Adapted from web-app-sdk (fbaba50): .github/workflows/ci.yml, its comment for the CLI's pins.
+# mise run install installs every pin mise.toml names and the module's requirements; the check
+# then runs offline, the integration tier included.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - uses: jdx/mise-action@v5.2.10
+
+      - name: mise run install
+        run: mise run install
+
+      - name: mise run check
+        run: mise run check

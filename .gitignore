@@ -5,11 +5,17 @@
 # Per-machine mise overrides.
 mise.local.toml
 
-node_modules
-# The build: only a release tag's tree carries it.
-dist/
-# A pack of the build.
-*.tgz
+# Build and coverage artifacts.
+/webappgen
+bin/
+*.test
+coverage.out
+coverage.html
+
+# Local workspace files.
+go.work
+go.work.sum
+tmp/
 
 # Editor and OS.
 *.swp
