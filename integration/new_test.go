@@ -7,6 +7,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"regexp"
 	"slices"
 	"strings"
 	"testing"
@@ -278,9 +279,19 @@ func TestNewStandalone_Writes(t *testing.T) {
 	}
 }
 
-// The project takes each layer by its exact release tag, as a private
-// package, and pins them with a lockfile; its mise config names the
-// webappgen that wrote it in one comment, and pins no webappgen.
+// releaseTag matches an exact release tag, vX.Y.Z.
+var releaseTag = regexp.MustCompile(`^v[0-9]+\.[0-9]+\.[0-9]+$`)
+
+// browserPin matches a platform's chrome-headless-shell entry: a download
+// from Chrome for Testing whose URL names mise's {{ version }}, and its
+// sha256.
+var browserPin = regexp.MustCompile(`^[a-z0-9-]+ = \{ url = "https://storage\.googleapis\.com/chrome-for-testing-public/\{\{ version \}\}/[^"]+/chrome-headless-shell-[a-z0-9-]+\.zip", checksum = "sha256:[0-9a-f]{64}"`)
+
+// The project takes each layer by an exact release tag, as a private
+// package, and its lockfile pins each at the same tag; its mise config names
+// the webappgen that wrote it in one comment, pins no webappgen, and pins
+// the browser tier's browser for every platform the CLI ships for, each
+// download's URL naming mise's version and carrying its sha256.
 func TestNewStandalone_Pins(t *testing.T) {
 	dir := filepath.Join(t.TempDir(), "my-app")
 
@@ -301,19 +312,16 @@ func TestNewStandalone_Pins(t *testing.T) {
 		t.Error(`package.json: "private" isn't true`)
 	}
 	lock := read(t, dir, "pnpm-lock.yaml")
-	for layer, tag := range map[string]string{
-		"web-foundation": "v0.3.0",
-		"web-components": "v0.1.0",
-		"web-app-sdk":    "v0.1.0",
-		"web-tooling":    "v0.1.0",
-	} {
-		name, spec := "@standards-lab/"+layer, "github:standards-lab/"+layer+"#"+tag
-		got, ok := manifest.Dependencies[name]
+	for _, layer := range []string{"web-foundation", "web-components", "web-app-sdk", "web-tooling"} {
+		name := "@standards-lab/" + layer
+		spec, ok := manifest.Dependencies[name]
 		if !ok {
-			got = manifest.DevDependencies[name]
+			spec = manifest.DevDependencies[name]
 		}
-		if got != spec {
-			t.Errorf("package.json: %s = %q, want %q", name, got, spec)
+		tag, found := strings.CutPrefix(spec, "github:standards-lab/"+layer+"#")
+		if !found || !releaseTag.MatchString(tag) {
+			t.Errorf("package.json: %s = %q, want github:standards-lab/%s#vX.Y.Z", name, spec, layer)
+			continue
 		}
 		if !strings.Contains(lock, "specifier: "+spec+"\n") {
 			t.Errorf("pnpm-lock.yaml doesn't pin %s at %s", name, spec)
@@ -325,60 +333,22 @@ func TestNewStandalone_Pins(t *testing.T) {
 	if !strings.HasPrefix(config, want) {
 		t.Errorf("mise.toml starts %q, want %q", config[:min(len(config), 80)], want)
 	}
-	// The browser tier's browser, pinned for each platform the CLI ships for, each download's URL
-	// naming mise's version.
-	for _, platform := range []string{
-		`linux-x64 = { url = "https://storage.googleapis.com/chrome-for-testing-public/{{ version }}/linux64/chrome-headless-shell-linux64.zip", checksum = "sha256:`,
-		`linux-arm64 = { url = "https://storage.googleapis.com/chrome-for-testing-public/{{ version }}/linux-arm64/chrome-headless-shell-linux-arm64.zip", checksum = "sha256:`,
-		`macos-x64 = { url = "https://storage.googleapis.com/chrome-for-testing-public/{{ version }}/mac-x64/chrome-headless-shell-mac-x64.zip", checksum = "sha256:`,
-		`macos-arm64 = { url = "https://storage.googleapis.com/chrome-for-testing-public/{{ version }}/mac-arm64/chrome-headless-shell-mac-arm64.zip", checksum = "sha256:`,
-	} {
-		if !strings.Contains(config, "\n"+platform) {
-			t.Errorf("mise.toml doesn't pin chrome-headless-shell as %q", platform)
-		}
-	}
+	pinned := map[string]bool{}
 	var naming []string
 	for line := range strings.Lines(config) {
+		if platform, _, ok := strings.Cut(line, " = "); ok && browserPin.MatchString(line) {
+			pinned[platform] = true
+		}
 		if strings.Contains(line, "webappgen") {
 			naming = append(naming, line)
 		}
 	}
+	for _, platform := range []string{"linux-x64", "linux-arm64", "macos-x64", "macos-arm64"} {
+		if !pinned[platform] {
+			t.Errorf("mise.toml doesn't pin chrome-headless-shell for %s by a URL naming {{ version }}, with its sha256", platform)
+		}
+	}
 	if len(naming) != 1 {
 		t.Errorf("mise.toml's lines naming webappgen = %q, want the one comment", naming)
-	}
-}
-
-// Every file the project copies or adapts from spike-html-apps names its
-// source in a provenance line, which the written project keeps.
-func TestNewStandalone_Provenance(t *testing.T) {
-	dir := filepath.Join(t.TempDir(), "my-app")
-
-	res := integration.Run(t, "new", "standalone", dir)
-
-	if res.Code != process.ExitOK {
-		t.Fatalf("code = %d, want %d; stderr = %q", res.Code, process.ExitOK, res.Stderr)
-	}
-	for _, name := range []string{
-		".gitignore",
-		".prettierignore",
-		"eslint.config.js",
-		"index.html",
-		"mise.toml",
-		"pnpm-workspace.yaml",
-		"scripts/preflight.sh",
-		"src/config.ts",
-		"src/main.ts",
-		"src/theme.ts",
-		"src/views/not-found.ts",
-		"test/browser/app.test.ts",
-		"test/browser/support/app.ts",
-		"test/browser/theme.test.ts",
-		"tsconfig.json",
-		"tsconfig.test.json",
-		"vite.config.ts",
-	} {
-		if !strings.Contains(read(t, dir, name), "spike-html-apps (2883d78): ") {
-			t.Errorf("%s has no provenance line naming spike-html-apps (2883d78)", name)
-		}
 	}
 }

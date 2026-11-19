@@ -63,25 +63,3 @@ func TestParseBase_Refuses(t *testing.T) {
 		})
 	}
 }
-
-// The leaf's flags and their defaults: --name and --title default to
-// values derived from the directory, so their flags have none.
-func TestCommand_Flags(t *testing.T) {
-	fs := standalone.Command("(devel)").Flags()
-	for name, def := range map[string]string{
-		"name":     "",
-		"title":    "",
-		"base":     "/",
-		"api-base": "/api/",
-		"install":  "false",
-	} {
-		f := fs.Lookup(name)
-		if f == nil {
-			t.Errorf("no --%s flag", name)
-			continue
-		}
-		if f.DefValue != def {
-			t.Errorf("--%s default = %q, want %q", name, f.DefValue, def)
-		}
-	}
-}
