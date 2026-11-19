@@ -25,6 +25,28 @@ the `standard` task points them at the Web Elemental standard once it is founded
 - The app binds single keys only, for critical operations, never chords, and ignores them inside
   text fields; a component binds none (`architecture/principles/downward-dependencies.md`).
 
+## Go CLI
+
+- The module depends only on go-core and go-cli-sdk, below it, and on no provider
+  (`architecture/standards/go-elemental/principles/dependencies.md`).
+- `internal/app`'s graph holds configuration as nodes, and each command builds only the nodes it
+  declares with `Use`; a kind's leaf declares none
+  (`architecture/standards/go-elemental/principles/lifecycle-and-context.md`).
+- A leaf checks its arguments and flags in `Args` and `Validate`, which build nothing, and help
+  and usage errors exit 2 (`architecture/standards/go-elemental/principles/cli-applications.md`).
+- The module is rooted at the repository's top, with `cmd/webappgen` and `internal/app`'s layer
+  files, and each kind of project in its own package
+  (`architecture/standards/go-elemental/principles/topology-and-naming.md`).
+- Every new exported function and constructor takes at most four required inputs and one
+  trailing options struct, and the integration harness's `Run(t, args...)` takes the program's
+  arguments (`architecture/standards/go-elemental/principles/construction-and-execution.md`).
+- Package docs cover `cmd/webappgen`, `internal/app`, `apptest`, and each kind's package, and the
+  integration suite runs the binary over `processtest`'s one-shot runner
+  (`architecture/standards/go-elemental/principles/tests-and-docs.md`).
+- The check and currency run from the root `mise.toml`, and a release is a plain `vX.Y.Z` tag on
+  main's merge commit with its `CHANGELOG.md` section
+  (`architecture/standards/go-elemental/principles/release-and-ci.md`).
+
 ## Code
 
 - A copied file names its source repository and commit in a provenance line, which reads

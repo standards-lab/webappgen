@@ -50,7 +50,8 @@ directory, and prints the steps left to run. Its flags:
 | `--install` | off | run `mise install` and `mise run install` in the project, leaving `mise run check` |
 
 `--install` reads the network: it installs the project's pinned tools and its packages from
-`pnpm-lock.yaml`. A step that fails exits nonzero naming the step, and the written project stays.
+`pnpm-lock.yaml`, naming each step and its output on stderr. A missing mise or a step that fails
+exits nonzero naming the step and the steps left, and the written project stays.
 
 The written project's `mise run check` lints, type-checks, runs the unit tier, builds into
 `dist/`, reports the build's size, and runs the browser tier on the build in the pinned

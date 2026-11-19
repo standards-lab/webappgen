@@ -22,7 +22,8 @@ module depends on `github.com/standards-lab/go-core` and `github.com/standards-l
   `--name`, `--title`, `--base`, `--api-base`, and `--install`. The written project depends on
   the web client stack's layers by exact release tag (web-foundation v0.3.0, web-components
   v0.1.0, web-app-sdk v0.1.0, and web-tooling v0.1.0) and pins its toolchain, Node, pnpm,
-  typescript-go, and chrome-headless-shell for linux and macOS on x64 and arm64, in `mise.toml`.
+  shellcheck, typescript-go, and chrome-headless-shell for linux and macOS on x64 and arm64, in
+  `mise.toml`.
   Its `mise run check` lints, type-checks, runs the unit tier, builds, reports the build's size,
   and runs the browser tier on the build; its `mise run currency` reports any pin behind its
   latest.

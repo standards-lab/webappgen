@@ -1,23 +1,56 @@
 # webappgen context
 
 webappgen is the web client CLI, a Go command on go-cli-sdk: `webappgen new <kind>` writes a
-client project for one kind of app on the stack, from files embedded in its binary. Its first kind,
-`standalone`, writes a static app; the embedded kinds, a client inside a new or an existing Go web
-service served by go-web-sdk's `NewClient`, follow in the goal's `embedded` task. It was named
-web-app-sdk-template until the `template` task's plan made it a CLI.
+client project for one kind of app on the stack, from files embedded in its binary. It writes one
+kind, `standalone`, a static app. Two embedded kinds, a client inside a new or an existing Go web
+service served by go-web-sdk's `NewClient`, are planned for the goal's `embedded` task (v0.2.0).
 
-It is the root Go module `github.com/standards-lab/webappgen`, starting at v0.1.0 and released by
-a plain `vX.Y.Z` tag as binaries for Linux and macOS. Its goals live in the coordinator's roadmap
-(`standards-lab/context/roadmap.toml`, v1.client.stack), and its strategy is
+It is the root Go module `github.com/standards-lab/webappgen`, released by a plain `vX.Y.Z` tag
+as binaries for Linux and macOS; its first release is v0.1.0. Its goals live in the coordinator's
+roadmap (`standards-lab/context/roadmap.toml`, v1.client.stack), and its strategy is
 `standards-lab/context/web-client.md`. Its CLI shape is copied from go-cli-sdk-template and its
 starter app from spike-html-apps' app, with a provenance line on every copied file; the spike is
-archived and never a dependency.
+archived and never a dependency. [README.md](../README.md) documents the flags, the written
+project's tasks, deployment, and the contributor workflow.
 
 ## Capability map
 
-- **CLI**: `version`, and `new` with one leaf per kind of app; usage errors name the fix.
-- **Standalone kind**: `new standalone <dir>` with `--name`, `--title`, `--base`, `--api-base`,
-  and `--install`.
+- **CLI**: `version`, and `new` with one leaf per kind of app. Usage errors name the fix.
+- **Standalone kind**: `new standalone <dir>` writes the starter, then the standalone kind's own
+  files over it (`index.html`, `vite.config.ts`, `public/config.json`). `--install` then runs
+  `mise install` and `mise run install` in the project.
+- **The written project**:
+  - It takes each layer by an exact `github:` release tag, with a committed lockfile.
+  - It pins chrome-headless-shell for linux-x64, linux-arm64, mac-x64, and mac-arm64.
+  - Its check runs lint, types, the unit tier, the build, and a size report with no budget, then
+    the browser tier on web-tooling.
+  - Its `currency` task holds typescript to typescript-eslint's range and rolldown to vite's.
+  - It applies the stored theme before first paint, from a render-blocking Vite input.
+  - Its router mounts a home view and a not-found view.
+  - Its config reader prefers the page's `#app-config` element and otherwise fetches
+    `config.json`.
+- **The full proof**: the root `mise run install` warms `.cache/pnpm-store`, and the integration
+  tier writes a project with `--install` offline and runs the written project's check.
+- **Release**: a tag on main triggers `release.yml`, which runs `scripts/pack.sh` to build four
+  archives and `SHA256SUMS`, attaches them to a draft release, then publishes it.
+
+## Facts the code relies on
+
+- `src/theme.ts` is its own Vite input because Vite folds every module script `index.html`
+  names into one injected entry and drops `blocking="render"`; a plugin in `vite.config.ts`
+  writes the theme chunk's script tag ahead of the entry.
+- `strictExecutionOrder` is on because the registry and the preferences module land in a chunk
+  the theme menu shares; without it, that chunk applies the stored theme before the theme chunk
+  registers the profiles the theme names.
+- The root `mise.toml`'s tools and the starter's `mise.toml.tmpl` move together: a unit test in
+  `internal/starter` holds every starter pin equal to the root's, so a chrome-headless-shell bump
+  changes both files' version, checksums, and sizes.
+- The embedded trees under `internal/*/files` must hold only git-tracked files. `go:embed all:`
+  takes whatever the working copy holds, such as `node_modules` or `dist` from a demo run, and
+  each kind's `TestFiles_Tracked` fails on it.
+- `scripts/pack.sh` builds and version-checks all four binaries before it writes any archive.
+  An archive written first into an output directory inside the checkout is an untracked file,
+  and `go build` stamps the next binary `+dirty`.
 
 ## Provenance
 
