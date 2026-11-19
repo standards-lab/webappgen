@@ -1,7 +1,8 @@
 // The build, served as a static host serves it, under the base its <base href> names: the home view
 // at the base, with the config's API base and the components' status badge; the not-found view at
 // any other path, its link back home taken by the router; and a deep link and a reload, which the
-// host answers with the page, reach the right view. Every asset loads, under the base, which the
+// host answers with the page, reach the right view. The header and the view sit inside gutters,
+// off the viewport's edges. Every asset loads, under the base, which the
 // document's base URI, Vite's base, and the router's agree on.
 // Adapted from spike-html-apps (2883d78): test/browser/base.test.ts, on a static host.
 
@@ -93,6 +94,20 @@ test("the base shows the home view, with the config's API base and a status badg
     "document.querySelector('app-home sl-status-badge')?.shadowRoot?.querySelector('button')?.textContent === 'ready'",
   );
   assertAllUnderBase(logged);
+});
+
+test("the header and the view sit inside gutters, off the viewport's edges", async (t) => {
+  const { page } = await open(app.base, t);
+  await mounted(page, "app-home");
+  const gutters: Record<string, { left: number; right: number }> = await page.evaluate(`
+    Object.fromEntries(["header h1", "header button", "app-home h2"].map((selector) => {
+      const box = document.querySelector(selector).getBoundingClientRect();
+      return [selector, { left: box.left, right: document.documentElement.clientWidth - box.right }];
+    }))`);
+  for (const [selector, { left, right }] of Object.entries(gutters)) {
+    assert.ok(left > 0, `${selector} is flush against the left edge`);
+    assert.ok(right > 0, `${selector} is flush against the right edge`);
+  }
 });
 
 test("a deep link to a path no route matches shows the not-found view, and a reload keeps it", async (t) => {

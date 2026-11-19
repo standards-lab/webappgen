@@ -3,8 +3,10 @@
      vite.config.ts's base agrees with: every relative URL the app reads, config.json among them,
      resolves under it, and the router's routes are relative to it. The build puts the theme
      module (src/theme.ts) ahead of the entry with blocking="render", so the stored theme is on
-     the root before first paint. The header's button opens <sl-theme-menu>, which the theme
-     module defines; the router mounts each view in <main>.
+     the root before first paint. The header's Settings button, a foundation .button, opens
+     <sl-theme-menu>, which the theme module defines, by the invoker command; its data-keys="s"
+     binds S to it through the foundation's keys.js, which the entry loads. The router mounts each
+     view in <main>; src/app.css lays out the header and the main column.
      Adapted from spike-html-apps (2883d78): test/consumers/app/index.html. -->
 <html lang="en">
   <head>
@@ -17,9 +19,11 @@
   <body>
     <header>
       <h1>{{html .Title}}</h1>
-      <button type="button" commandfor="theme-menu" command="--open">Theme</button>
+      <button class="button" type="button" commandfor="settings" command="--open" data-keys="s">
+        Settings <kbd>S</kbd>
+      </button>
     </header>
     <main></main>
-    <sl-theme-menu id="theme-menu"></sl-theme-menu>
+    <sl-theme-menu id="settings"></sl-theme-menu>
   </body>
 </html>

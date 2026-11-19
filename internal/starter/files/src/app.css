@@ -1,0 +1,35 @@
+/*
+ * The app's page layout: the header, its title and Settings button on one row, and the main
+ * column, centered and capped inside gutters. The foundation leaves page layout to the page: its
+ * tool sheets carry buttons, fields, scrolling, and tables, and no layout class, so this layer
+ * holds the little the page needs, on the foundation's space tokens. Its own layer, declared after
+ * the foundation's, wins over it.
+ * After web-foundation (v0.3.0): demo/demo.css, its main column.
+ */
+
+@layer app {
+  header,
+  main {
+    inline-size: min(100% - 2 * var(--space-m), 60rem);
+    margin-inline: auto;
+  }
+
+  header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-s);
+    padding-block: var(--space-m);
+    border-block-end: 1px solid var(--border);
+  }
+
+  /* The title sits on the header's row, so the header's padding spaces it, not its margins. */
+  header h1 {
+    margin: 0;
+  }
+
+  main {
+    padding-block: var(--space-l) var(--space-2xl);
+  }
+}

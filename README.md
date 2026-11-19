@@ -55,8 +55,15 @@ exits nonzero naming the step and the steps left, and the written project stays.
 
 The written project's `mise run check` lints, type-checks, runs the unit tier, builds into
 `dist/`, reports the build's size, and runs the browser tier on the build in the pinned
-chrome-headless-shell. `mise run currency` reports any tool, package, or layer pin behind its
-latest; it holds typescript to typescript-eslint's range and rolldown to vite's.
+chrome-headless-shell. `mise run dev` serves the app from its source with Vite's dev server, and
+`mise run preview` builds it and serves `dist/` with `vite preview`, each at Vite's default host
+and port under the `--base` path; the check runs neither. `mise run currency` reports any tool,
+package, or layer pin behind its latest; it holds typescript to typescript-eslint's range and
+rolldown to vite's.
+
+The app's page takes web-foundation's full entry, so its Settings menu, opened by the header's
+button or the S key, offers every built-in color, space, and type profile, and the reader's
+stored choice applies before first paint.
 
 ## Deploy a standalone build
 

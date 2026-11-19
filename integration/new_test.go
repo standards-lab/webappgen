@@ -160,6 +160,7 @@ var written = []string{
 	"scripts/preflight.sh",
 	"scripts/size.ts",
 	"src",
+	"src/app.css",
 	"src/config.ts",
 	"src/main.ts",
 	"src/theme.ts",

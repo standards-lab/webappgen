@@ -78,6 +78,17 @@ description = "Build the app with Vite (vite.config.ts) into dist/"
 depends = ["preflight"]
 run = "pnpm exec vite build"
 
+# The local servers, at Vite's default host and port; no check runs them.
+[tasks.dev]
+description = "Serve the app from its source with Vite's dev server, reloading on each change; reads the network only as a local server"
+depends = ["preflight"]
+run = "pnpm exec vite"
+
+[tasks.preview]
+description = "Build the app, then serve dist/ with vite preview, as a static host would; reads the network only as a local server"
+depends = ["build"]
+run = "pnpm exec vite preview"
+
 # A report, not a gate: no budget is enforced.
 [tasks.size]
 description = "Print the build's raw, gzip, and brotli totals"
