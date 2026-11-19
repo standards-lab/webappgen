@@ -1,0 +1,69 @@
+# Releases the CLI from a pushed vX.Y.Z tag on main's merge commit; nothing here tags. It refuses a
+# tag whose commit isn't on main, runs the check, and packs the four binaries with scripts/pack.sh,
+# which builds linux and darwin on amd64 and arm64 with CGO_ENABLED=0 on this one runner and
+# refuses any binary whose version isn't the tag: each binary's version go build stamps from the
+# tag, read with go version -m, and the linux/amd64 binary's version command, run. The release is
+# created as a draft from the tag's CHANGELOG.md section, every archive and SHA256SUMS attached,
+# and only then published, so a release appears only whole: a failed upload leaves a draft.
+#
+# Actions are pinned by their exact release tag, which `mise run currency` compares with each
+# action's latest release. Runs for one tag are serialized and never cancelled.
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      TAG: ${{ github.ref_name }}
+    steps:
+      # Every branch and tag, so main is at hand and go build finds the tag on HEAD.
+      - uses: actions/checkout@v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Refuse a tag whose commit isn't on main
+        run: |
+          set -euo pipefail
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "$TAG's commit $GITHUB_SHA isn't on main" >&2
+            exit 1
+          fi
+
+      - uses: jdx/mise-action@v5.2.10
+
+      - name: mise run install
+        run: mise run install
+
+      - name: mise run check
+        run: mise run check
+
+      - name: Build, check each binary's version against the tag, and pack
+        run: scripts/pack.sh "$TAG" dist
+
+      - name: Create the draft release
+        uses: taiki-e/create-gh-release-action@v1.12.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          changelog: CHANGELOG.md
+          draft: true
+
+      - name: Attach the archives and SHA256SUMS
+        run: gh release upload "$TAG" dist/*.tar.gz dist/SHA256SUMS
+
+      - name: Publish the release
+        run: gh release edit "$TAG" --draft=false

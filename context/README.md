@@ -18,3 +18,15 @@ archived and never a dependency.
 - **CLI**: `version`, and `new` with one leaf per kind of app; usage errors name the fix.
 - **Standalone kind**: `new standalone <dir>` with `--name`, `--title`, `--base`, `--api-base`,
   and `--install`.
+
+## Provenance
+
+The JSON and generated files, which take no comment, have their provenance here; every other
+copied file carries its own line.
+
+- `internal/starter/files/.prettierrc.json`: from spike-html-apps (2883d78) `.prettierrc.json`,
+  byte for byte.
+- `internal/starter/files/package.json.tmpl`: adapted from spike-html-apps (2883d78)
+  `package.json` and `test/consumers/app/package.json`, moved onto the standards-lab layers.
+- `internal/standalone/files/public/config.json.tmpl`: new.
+- `internal/starter/files/pnpm-lock.yaml`: produced by `pnpm install` (pnpm 12.21.0).

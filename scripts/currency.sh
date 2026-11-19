@@ -36,7 +36,8 @@ while read -r line; do
   [[ -z $line ]] || report "go.mod: $line"
 done <<<"$updates"
 
-# mise tools pinned below their latest version. Errors only: mise warns on every run that a
+# mise tools pinned below their latest version, the starter's shared pins among them, so a tool
+# reported here trails in a written project too. Errors only: mise warns on every run that a
 # GitHub release has no assets.
 outdated=$(MISE_LOG_LEVEL=error mise outdated --bump --no-global --json |
   jq -r 'to_entries[] | "\(.key) \(.value.requested) -> \(.value.bump)"')
@@ -44,7 +45,8 @@ while read -r line; do
   [[ -z $line ]] || report "mise.toml: $line"
 done <<<"$outdated"
 
-# Each action a workflow uses, against its repository's latest release.
+# Each action a workflow uses, the release workflow's included, against its repository's latest
+# release.
 uses=$(grep -ho 'uses: *[^ ]*@[^ ]*' .github/workflows/*.yml | sed 's/uses: *//' | sort -u)
 while read -r action; do
   [[ -n $action ]] || continue

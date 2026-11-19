@@ -154,6 +154,7 @@ var written = []string{
 	"public",
 	"public/config.json",
 	"scripts",
+	"scripts/currency.sh",
 	"scripts/preflight.sh",
 	"scripts/size.ts",
 	"src",

@@ -92,3 +92,10 @@ run = "BROWSER_EXECUTABLE=$(mise which chrome-headless-shell) node --test 'test/
 [tasks.check]
 description = "Run every check: lint, types, the unit tier, the build, its size, and the browser tier; reads no network; writes dist/"
 depends = ["lint", "types", "test:unit", "build", "size", "test:browser"]
+
+# A report, not a gate: no check runs it. typescript is held to typescript-eslint's range and
+# rolldown to vite's.
+[tasks.currency]
+description = "Report every mise tool, package.json pin, and layer's tag behind its latest, exiting nonzero if any; reads the network"
+run = "scripts/currency.sh"
+quiet = true
