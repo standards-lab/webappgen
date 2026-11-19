@@ -40,6 +40,14 @@ func Run(t testing.TB, args ...string) processtest.Result {
 	return processtest.Run(t, processtest.Cmd{Args: args})
 }
 
+// RunEnv is [Run] with env, KEY=VALUE overrides added to the environment
+// the program inherits, such as a PATH without mise, or the offline
+// settings --install's steps read.
+func RunEnv(t testing.TB, env []string, args ...string) processtest.Result {
+	t.Helper()
+	return processtest.Run(t, processtest.Cmd{Args: args, Env: env})
+}
+
 // Tree returns every path under root, relative to it and slash-separated,
 // in lexical order, directories included, or nil when root doesn't exist,
 // so a test compares what a run left in a directory with what was there

@@ -12,6 +12,9 @@ bin/
 coverage.out
 coverage.html
 
+# The pnpm store mise run install fills for the full proof.
+.cache/
+
 # Local workspace files.
 go.work
 go.work.sum

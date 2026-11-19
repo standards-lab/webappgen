@@ -11,6 +11,7 @@
 //     and builds cmd/webappgen once per run.
 //   - [Run] runs the built program once with its arguments and returns its
 //     processtest.Result.
+//   - [RunEnv] runs it once with its arguments and environment overrides.
 //   - [Tree] lists a directory's paths, for a test asserting what a run
 //     wrote there, or that it wrote nothing.
 //

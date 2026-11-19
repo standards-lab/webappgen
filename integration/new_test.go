@@ -216,7 +216,7 @@ func TestNewStandalone_Writes(t *testing.T) {
 		{name: "empty dir", empty: true, pkg: `"my-app"`, title: "my-app", base: "/", apiBase: `"/api/"`},
 		{
 			name:  "every flag",
-			flags: []string{"--name", "console", "--title", `Ops & "Console"`, "--base", "/app", "--api-base", "https://api.example.com/v1/", "--install"},
+			flags: []string{"--name", "console", "--title", `Ops & "Console"`, "--base", "/app", "--api-base", "https://api.example.com/v1/"},
 			pkg:   `"console"`, title: "Ops &amp; &#34;Console&#34;", base: "/app/", apiBase: `"https://api.example.com/v1/"`,
 		},
 	} {

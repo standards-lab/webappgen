@@ -74,7 +74,11 @@ type options struct {
 //
 // A valid run writes the project into dir, never prompting: the starter,
 // then [Files] over it, rendered with the flags' [Values] and version, the
-// webappgen version writing it. It then prints the next steps and exits 0.
+// webappgen version writing it. It then prints the next steps, mise install,
+// mise run install, and mise run check, and exits 0. With --install, it
+// runs the first two itself, with [project.Install], their progress on
+// stderr, and prints the one left; a mise missing from PATH or a step that
+// fails exits nonzero naming the step, and the written project stays.
 func Command(version string) *cli.Command {
 	var o options
 	cmd := &cli.Command{
@@ -85,12 +89,18 @@ func Command(version string) *cli.Command {
 		Validate: func(inv *cli.Invocation) error {
 			return o.validate(inv.Args[0])
 		},
-		Run: func(_ context.Context, inv *cli.Invocation) error {
+		Run: func(ctx context.Context, inv *cli.Invocation) error {
 			values := Values{Name: o.name, Title: o.title, Base: o.base, APIBase: o.apiBase, Version: version}
 			if err := project.Write(o.dir, values, starter.Files, Files); err != nil {
 				return err
 			}
-			return writeNextSteps(inv.Stdout, o.dir)
+			if !o.install {
+				return writeNextSteps(inv.Stdout, o.dir, "mise install", "mise run install", "mise run check")
+			}
+			if err := project.Install(ctx, o.dir, inv.Stderr); err != nil {
+				return err
+			}
+			return writeNextSteps(inv.Stdout, o.dir, "mise run check")
 		},
 	}
 	fs := cmd.Flags()
@@ -184,8 +194,9 @@ func ParseBase(base string) (string, error) {
 	return slashed, nil
 }
 
-// writeNextSteps writes to w what to run once the project is in dir.
-func writeNextSteps(w io.Writer, dir string) error {
-	_, err := fmt.Fprintf(w, "Next steps:\n  cd %s\n  mise install\n  mise run install\n  mise run check\n", dir)
+// writeNextSteps writes to w the steps left to run in dir, the project's
+// directory, in order.
+func writeNextSteps(w io.Writer, dir string, steps ...string) error {
+	_, err := fmt.Fprintf(w, "Next steps:\n  cd %s\n  %s\n", dir, strings.Join(steps, "\n  "))
 	return err
 }
