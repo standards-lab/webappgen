@@ -3,7 +3,9 @@
 package integration_test
 
 import (
+	"encoding/json"
 	"os"
+	"path"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -137,17 +139,74 @@ func TestNewStandalone_UsageErrors(t *testing.T) {
 	}
 }
 
+// written is every path a standalone run writes, directories included, in
+// Tree's order: the starter's files with the kind's laid over them.
+var written = []string{
+	".gitignore",
+	".prettierignore",
+	".prettierrc.json",
+	"eslint.config.js",
+	"index.html",
+	"mise.toml",
+	"package.json",
+	"pnpm-lock.yaml",
+	"pnpm-workspace.yaml",
+	"public",
+	"public/config.json",
+	"scripts",
+	"scripts/preflight.sh",
+	"scripts/size.ts",
+	"src",
+	"src/main.ts",
+	"test",
+	"test/unit",
+	"test/unit/size.test.ts",
+	"tsconfig.json",
+	"tsconfig.test.json",
+	"vite.config.ts",
+}
+
+// read returns the file at name under dir.
+func read(t *testing.T, dir, name string) string {
+	t.Helper()
+	b, err := os.ReadFile(filepath.Join(dir, filepath.FromSlash(name)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	return string(b)
+}
+
+// version returns what the built binary's version command prints.
+func version(t *testing.T) string {
+	t.Helper()
+	res := integration.Run(t, "version")
+	if res.Code != process.ExitOK {
+		t.Fatalf("version: code = %d; stderr = %q", res.Code, res.Stderr)
+	}
+	return strings.TrimSuffix(res.Stdout, "\n")
+}
+
 // A valid run, into a directory that doesn't exist or is empty, with every
-// flag given or none, exits 0 and prints the next steps.
-func TestNewStandalone_NextSteps(t *testing.T) {
+// flag given or none, writes the project, prints the next steps, and exits
+// 0. The flags' values, or their defaults, are filled in where the project
+// reads them.
+func TestNewStandalone_Writes(t *testing.T) {
 	for _, tc := range []struct {
-		name  string
-		flags []string
-		empty bool
+		name    string
+		flags   []string
+		empty   bool
+		pkg     string // package.json's name, JSON-quoted
+		title   string // the page's <title>, HTML-escaped
+		base    string
+		apiBase string // config.json's apiBase, JSON-quoted
 	}{
-		{name: "defaults"},
-		{name: "empty dir", empty: true},
-		{name: "every flag", flags: []string{"--name", "console", "--title", "Console", "--base", "/app", "--api-base", "https://api.example.com/", "--install"}},
+		{name: "defaults", pkg: `"my-app"`, title: "my-app", base: "/", apiBase: `"/api/"`},
+		{name: "empty dir", empty: true, pkg: `"my-app"`, title: "my-app", base: "/", apiBase: `"/api/"`},
+		{
+			name:  "every flag",
+			flags: []string{"--name", "console", "--title", `Ops & "Console"`, "--base", "/app", "--api-base", "https://api.example.com/v1/", "--install"},
+			pkg:   `"console"`, title: "Ops &amp; &#34;Console&#34;", base: "/app/", apiBase: `"https://api.example.com/v1/"`,
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			dir := filepath.Join(t.TempDir(), "my-app")
@@ -169,6 +228,92 @@ func TestNewStandalone_NextSteps(t *testing.T) {
 			if res.Stderr != "" {
 				t.Errorf("stderr = %q, want empty", res.Stderr)
 			}
+			if got := integration.Tree(t, dir); !slices.Equal(got, written) {
+				t.Errorf("tree = %q, want %q", got, written)
+			}
+			for name, wants := range map[string][]string{
+				"package.json":       {`"name": ` + tc.pkg + ",\n", `"private": true,`},
+				"index.html":         {`<base href="` + tc.base + `" />`, "<title>" + tc.title + "</title>"},
+				"vite.config.ts":     {`base: "` + tc.base + `",`},
+				"public/config.json": {"{\n  \"apiBase\": " + tc.apiBase + "\n}\n"},
+			} {
+				content := read(t, dir, name)
+				for _, want := range wants {
+					if !strings.Contains(content, want) {
+						t.Errorf("%s = %q, want it to hold %q", name, content, want)
+					}
+				}
+			}
+			for _, name := range written {
+				if path.Ext(name) != "" && strings.Contains(read(t, dir, name), "{{") {
+					t.Errorf("%s holds an unrendered {{", name)
+				}
+			}
+			info, err := os.Stat(filepath.Join(dir, "scripts", "preflight.sh"))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if info.Mode().Perm()&0o111 == 0 {
+				t.Errorf("scripts/preflight.sh mode = %v, want it executable", info.Mode())
+			}
 		})
+	}
+}
+
+// The project takes each layer by its exact release tag, as a private
+// package, and pins them with a lockfile; its mise config names the
+// webappgen that wrote it in one comment, and pins no webappgen.
+func TestNewStandalone_Pins(t *testing.T) {
+	dir := filepath.Join(t.TempDir(), "my-app")
+
+	res := integration.Run(t, "new", "standalone", dir)
+
+	if res.Code != process.ExitOK {
+		t.Fatalf("code = %d, want %d; stderr = %q", res.Code, process.ExitOK, res.Stderr)
+	}
+	var manifest struct {
+		Private         bool              `json:"private"`
+		Dependencies    map[string]string `json:"dependencies"`
+		DevDependencies map[string]string `json:"devDependencies"`
+	}
+	if err := json.Unmarshal([]byte(read(t, dir, "package.json")), &manifest); err != nil {
+		t.Fatalf("package.json: %v", err)
+	}
+	if !manifest.Private {
+		t.Error(`package.json: "private" isn't true`)
+	}
+	lock := read(t, dir, "pnpm-lock.yaml")
+	for layer, tag := range map[string]string{
+		"web-foundation": "v0.3.0",
+		"web-components": "v0.1.0",
+		"web-app-sdk":    "v0.1.0",
+		"web-tooling":    "v0.1.0",
+	} {
+		name, spec := "@standards-lab/"+layer, "github:standards-lab/"+layer+"#"+tag
+		got, ok := manifest.Dependencies[name]
+		if !ok {
+			got = manifest.DevDependencies[name]
+		}
+		if got != spec {
+			t.Errorf("package.json: %s = %q, want %q", name, got, spec)
+		}
+		if !strings.Contains(lock, "specifier: "+spec+"\n") {
+			t.Errorf("pnpm-lock.yaml doesn't pin %s at %s", name, spec)
+		}
+	}
+
+	config := read(t, dir, "mise.toml")
+	want := "# Written by webappgen " + version(t) + ".\n"
+	if !strings.HasPrefix(config, want) {
+		t.Errorf("mise.toml starts %q, want %q", config[:min(len(config), 80)], want)
+	}
+	var naming []string
+	for line := range strings.Lines(config) {
+		if strings.Contains(line, "webappgen") {
+			naming = append(naming, line)
+		}
+	}
+	if len(naming) != 1 {
+		t.Errorf("mise.toml's lines naming webappgen = %q, want the one comment", naming)
 	}
 }

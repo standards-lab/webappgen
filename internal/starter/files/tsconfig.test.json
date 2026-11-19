@@ -1,0 +1,15 @@
+// mise run types:test: tsc type-checks the suite under test/ and the scripts, the TypeScript node
+// runs under its type stripping, against node's types, without emitting. The suite runs on node
+// alone, so no DOM library.
+// Adapted from spike-html-apps (2883d78): tsconfig.test.json, for one client app.
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "lib": ["es2024"],
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "types": ["node"],
+    "checkJs": false
+  },
+  "include": ["test/**/*.ts", "scripts/**/*.ts"]
+}

@@ -1,0 +1,8 @@
+# pnpm's settings for the install (mise run install); the project is one package, so it lists no
+# packages. The layers, each a github: dependency installed at its release tag, need no setting
+# here: pnpm guards only a git dependency below the top level (blockExoticSubdeps).
+# Adapted from spike-html-apps (2883d78): pnpm-workspace.yaml, without the import plugins' build.
+
+# minimumReleaseAge: 0 turns off pnpm's default wait of a day before it installs a release, so a
+# frozen install of a lockfile that pins a release under a day old doesn't fail.
+minimumReleaseAge: 0

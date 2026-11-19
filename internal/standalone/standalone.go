@@ -2,6 +2,7 @@ package standalone
 
 import (
 	"context"
+	"embed"
 	"errors"
 	"fmt"
 	"io"
@@ -12,7 +13,46 @@ import (
 	"strings"
 
 	"github.com/standards-lab/go-cli-sdk"
+
+	"github.com/standards-lab/webappgen/internal/project"
+	"github.com/standards-lab/webappgen/internal/starter"
 )
+
+//go:embed all:files
+var files embed.FS
+
+// Files is the standalone kind's own tree, rooted at its own top, which
+// [Command] lays over [starter.Files]: the page, with its <base href>; the
+// Vite config, at the same base; and public/config.json, which the app
+// reads its API's address from. Its templates read [Values].
+var Files fs.FS = mustSub(files, "files")
+
+// mustSub returns fsys's subtree at dir, which the embed above guarantees.
+func mustSub(fsys fs.FS, dir string) fs.FS {
+	sub, err := fs.Sub(fsys, dir)
+	if err != nil {
+		panic(err)
+	}
+	return sub
+}
+
+// Values are what the standalone project's templates, the starter's and
+// the kind's own, are rendered with.
+type Values struct {
+	// Name is the project's package name.
+	Name string
+	// Title is the page's title.
+	Title string
+	// Base is the absolute path the app is served under, as [ParseBase]
+	// returns it.
+	Base string
+	// APIBase is the URL of the API the app calls, written to its
+	// config.json.
+	APIBase string
+	// Version is the webappgen version that wrote the project, named in its
+	// mise.toml.
+	Version string
+}
 
 // options are one run's settings: its flags as given, and what Validate
 // derives from them and the directory.
@@ -32,10 +72,10 @@ type options struct {
 // error. Every refusal comes before anything is written. It declares no
 // graph nodes, so it builds nothing and reads no configuration.
 //
-// A valid run prints the next steps and exits 0. It writes no project yet:
-// the leaf's checks and its output are in place for the writing to land
-// between them.
-func Command() *cli.Command {
+// A valid run writes the project into dir, never prompting: the starter,
+// then [Files] over it, rendered with the flags' [Values] and version, the
+// webappgen version writing it. It then prints the next steps and exits 0.
+func Command(version string) *cli.Command {
 	var o options
 	cmd := &cli.Command{
 		Name:     "standalone",
@@ -46,6 +86,10 @@ func Command() *cli.Command {
 			return o.validate(inv.Args[0])
 		},
 		Run: func(_ context.Context, inv *cli.Invocation) error {
+			values := Values{Name: o.name, Title: o.title, Base: o.base, APIBase: o.apiBase, Version: version}
+			if err := project.Write(o.dir, values, starter.Files, Files); err != nil {
+				return err
+			}
 			return writeNextSteps(inv.Stdout, o.dir)
 		},
 	}

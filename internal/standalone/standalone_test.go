@@ -3,8 +3,15 @@ package standalone_test
 import (
 	"testing"
 
+	"github.com/standards-lab/webappgen/internal/project/projecttest"
 	"github.com/standards-lab/webappgen/internal/standalone"
 )
+
+// The kind embeds only what git tracks in files/: never node_modules or a
+// build a demo run left there.
+func TestFiles_Tracked(t *testing.T) {
+	projecttest.CheckTracked(t, standalone.Files, "files")
+}
 
 func TestParseBase_Accepts(t *testing.T) {
 	for base, want := range map[string]string{
@@ -60,7 +67,7 @@ func TestParseBase_Refuses(t *testing.T) {
 // The leaf's flags and their defaults: --name and --title default to
 // values derived from the directory, so their flags have none.
 func TestCommand_Flags(t *testing.T) {
-	fs := standalone.Command().Flags()
+	fs := standalone.Command("(devel)").Flags()
 	for name, def := range map[string]string{
 		"name":     "",
 		"title":    "",

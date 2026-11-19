@@ -1,0 +1,18 @@
+<!doctype html>
+<!-- The app's page. Its <base href> is the absolute path the app is served under, which
+     vite.config.ts's base agrees with: every relative URL the app reads, config.json among them,
+     resolves under it. Adapted from spike-html-apps (2883d78): test/consumers/app/index.html. -->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <base href="{{html .Base}}" />
+    <title>{{html .Title}}</title>
+    <script type="module" src="./src/main.ts"></script>
+  </head>
+  <body>
+    <main>
+      <h1>{{html .Title}}</h1>
+    </main>
+  </body>
+</html>

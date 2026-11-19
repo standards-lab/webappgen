@@ -22,10 +22,12 @@ func mountDomain(root *cli.Command, n *Nodes) {
 }
 
 // newCommand returns the new command, the parent of one leaf per kind of
-// project. Run alone, it prints its help, which lists the kinds.
+// project, each given the version the version command prints, which the
+// projects it writes name. Run alone, it prints its help, which lists the
+// kinds.
 func newCommand() *cli.Command {
 	return (&cli.Command{
 		Name:    "new",
 		Summary: "Write a new web client project of one kind",
-	}).Add(standalone.Command())
+	}).Add(standalone.Command(moduleVersion()))
 }

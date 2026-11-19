@@ -1,0 +1,14 @@
+# Adapted from spike-html-apps (2883d78): .gitignore, for one client app.
+node_modules
+# The build (mise run build).
+dist/
+
+# Per-machine mise overrides.
+mise.local.toml
+
+# Editor and OS.
+*.swp
+*~
+.vscode/
+.idea/
+.DS_Store
