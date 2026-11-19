@@ -157,9 +157,21 @@ var written = []string{
 	"scripts/preflight.sh",
 	"scripts/size.ts",
 	"src",
+	"src/config.ts",
 	"src/main.ts",
+	"src/theme.ts",
+	"src/views",
+	"src/views/home.ts",
+	"src/views/not-found.ts",
 	"test",
+	"test/browser",
+	"test/browser/app.test.ts",
+	"test/browser/support",
+	"test/browser/support/app.ts",
+	"test/browser/support/build.ts",
+	"test/browser/theme.test.ts",
 	"test/unit",
+	"test/unit/config.test.ts",
 	"test/unit/size.test.ts",
 	"tsconfig.json",
 	"tsconfig.test.json",
@@ -245,7 +257,12 @@ func TestNewStandalone_Writes(t *testing.T) {
 				}
 			}
 			for _, name := range written {
-				if path.Ext(name) != "" && strings.Contains(read(t, dir, name), "{{") {
+				if path.Ext(name) == "" {
+					continue
+				}
+				// mise.toml's download URLs hold mise's own {{ version }}, written as such.
+				content := strings.ReplaceAll(read(t, dir, name), "{{ version }}", "")
+				if strings.Contains(content, "{{") {
 					t.Errorf("%s holds an unrendered {{", name)
 				}
 			}
@@ -307,6 +324,18 @@ func TestNewStandalone_Pins(t *testing.T) {
 	if !strings.HasPrefix(config, want) {
 		t.Errorf("mise.toml starts %q, want %q", config[:min(len(config), 80)], want)
 	}
+	// The browser tier's browser, pinned for each platform the CLI ships for, each download's URL
+	// naming mise's version.
+	for _, platform := range []string{
+		`linux-x64 = { url = "https://storage.googleapis.com/chrome-for-testing-public/{{ version }}/linux64/chrome-headless-shell-linux64.zip", checksum = "sha256:`,
+		`linux-arm64 = { url = "https://storage.googleapis.com/chrome-for-testing-public/{{ version }}/linux-arm64/chrome-headless-shell-linux-arm64.zip", checksum = "sha256:`,
+		`macos-x64 = { url = "https://storage.googleapis.com/chrome-for-testing-public/{{ version }}/mac-x64/chrome-headless-shell-mac-x64.zip", checksum = "sha256:`,
+		`macos-arm64 = { url = "https://storage.googleapis.com/chrome-for-testing-public/{{ version }}/mac-arm64/chrome-headless-shell-mac-arm64.zip", checksum = "sha256:`,
+	} {
+		if !strings.Contains(config, "\n"+platform) {
+			t.Errorf("mise.toml doesn't pin chrome-headless-shell as %q", platform)
+		}
+	}
 	var naming []string
 	for line := range strings.Lines(config) {
 		if strings.Contains(line, "webappgen") {
@@ -315,5 +344,40 @@ func TestNewStandalone_Pins(t *testing.T) {
 	}
 	if len(naming) != 1 {
 		t.Errorf("mise.toml's lines naming webappgen = %q, want the one comment", naming)
+	}
+}
+
+// Every file the project copies or adapts from spike-html-apps names its
+// source in a provenance line, which the written project keeps.
+func TestNewStandalone_Provenance(t *testing.T) {
+	dir := filepath.Join(t.TempDir(), "my-app")
+
+	res := integration.Run(t, "new", "standalone", dir)
+
+	if res.Code != process.ExitOK {
+		t.Fatalf("code = %d, want %d; stderr = %q", res.Code, process.ExitOK, res.Stderr)
+	}
+	for _, name := range []string{
+		".gitignore",
+		".prettierignore",
+		"eslint.config.js",
+		"index.html",
+		"mise.toml",
+		"pnpm-workspace.yaml",
+		"scripts/preflight.sh",
+		"src/config.ts",
+		"src/main.ts",
+		"src/theme.ts",
+		"src/views/not-found.ts",
+		"test/browser/app.test.ts",
+		"test/browser/support/app.ts",
+		"test/browser/theme.test.ts",
+		"tsconfig.json",
+		"tsconfig.test.json",
+		"vite.config.ts",
+	} {
+		if !strings.Contains(read(t, dir, name), "spike-html-apps (2883d78): ") {
+			t.Errorf("%s has no provenance line naming spike-html-apps (2883d78)", name)
+		}
 	}
 }

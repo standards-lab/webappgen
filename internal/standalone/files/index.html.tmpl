@@ -1,7 +1,11 @@
 <!doctype html>
 <!-- The app's page. Its <base href> is the absolute path the app is served under, which
      vite.config.ts's base agrees with: every relative URL the app reads, config.json among them,
-     resolves under it. Adapted from spike-html-apps (2883d78): test/consumers/app/index.html. -->
+     resolves under it, and the router's routes are relative to it. The build puts the theme
+     module (src/theme.ts) ahead of the entry with blocking="render", so the stored theme is on
+     the root before first paint. The header's button opens <sl-theme-menu>, which the theme
+     module defines; the router mounts each view in <main>.
+     Adapted from spike-html-apps (2883d78): test/consumers/app/index.html. -->
 <html lang="en">
   <head>
     <meta charset="utf-8" />
@@ -11,8 +15,11 @@
     <script type="module" src="./src/main.ts"></script>
   </head>
   <body>
-    <main>
+    <header>
       <h1>{{html .Title}}</h1>
-    </main>
+      <button type="button" commandfor="theme-menu" command="--open">Theme</button>
+    </header>
+    <main></main>
+    <sl-theme-menu id="theme-menu"></sl-theme-menu>
   </body>
 </html>

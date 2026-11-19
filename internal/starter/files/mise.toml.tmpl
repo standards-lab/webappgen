@@ -1,6 +1,7 @@
 # Written by webappgen {{.Version}}.
 # Adapted from spike-html-apps (2883d78): mise.toml, its Node toolchain and tasks, for one client
-# app; and web-app-sdk (fbaba50): mise.toml, its pins.
+# app; and web-app-sdk (fbaba50): mise.toml, its pins, its browser's for every platform the CLI
+# ships for.
 # Tasks never install a missing tool; mise run install is the one task that reads the network.
 [settings]
 task.run_auto_install = false
@@ -11,6 +12,19 @@ node = "26.13.1"
 pnpm = "12.21.0"
 shellcheck = "0.11.0"
 "github:microsoft/typescript-go" = { version = "7.0.2", version_prefix = "typescript/v", bin_path = "package/lib" }
+
+# The browser tier's browser, at the layers' pin. Chrome for Testing publishes no checksums: take
+# the sha256 and size from each platform's download by hand at each bump.{{/* Each url's {{ version }} is mise's, written through text/template's {{"{{"}} and {{"}}"}}. */}}
+[tools."http:chrome-headless-shell"]
+version = "158.0.8127.36"
+version_list_url = "https://googlechromelabs.github.io/chrome-for-testing/last-known-good-versions.json"
+version_json_path = ".channels.Stable.version"
+
+[tools."http:chrome-headless-shell".platforms]
+linux-x64 = { url = "https://storage.googleapis.com/chrome-for-testing-public/{{"{{"}} version {{"}}"}}/linux64/chrome-headless-shell-linux64.zip", checksum = "sha256:2d3a23017323c54fd457a678e4351f895c4076d8050e39d5aa6247f93448b73a", size = "132087165" }
+linux-arm64 = { url = "https://storage.googleapis.com/chrome-for-testing-public/{{"{{"}} version {{"}}"}}/linux-arm64/chrome-headless-shell-linux-arm64.zip", checksum = "sha256:176ee5c55486c22de43128871189061365ea28e881fc96016fd18e7cb59437c8", size = "129938239" }
+macos-x64 = { url = "https://storage.googleapis.com/chrome-for-testing-public/{{"{{"}} version {{"}}"}}/mac-x64/chrome-headless-shell-mac-x64.zip", checksum = "sha256:e0c5d07d8f5bcc5bdd5ef370e7daf3770856b585fcc9eecf441c7e3bb2e3d1cf", size = "112306247" }
+macos-arm64 = { url = "https://storage.googleapis.com/chrome-for-testing-public/{{"{{"}} version {{"}}"}}/mac-arm64/chrome-headless-shell-mac-arm64.zip", checksum = "sha256:c24d40a3786322ff3a5e3ac6eed162226cbaf07ebe468715407827226b0f8897", size = "105057133" }
 
 [tasks.preflight]
 description = "Fail naming mise run install when a tool the tasks need is missing"
@@ -69,6 +83,12 @@ description = "Print the build's raw, gzip, and brotli totals"
 depends = ["build"]
 run = "node scripts/size.ts"
 
+# The browser tier loads the build, so it builds first.
+[tasks."test:browser"]
+description = "Run the browser tier on the build in the pinned chrome-headless-shell"
+depends = ["preflight browser", "build"]
+run = "BROWSER_EXECUTABLE=$(mise which chrome-headless-shell) node --test 'test/browser/*.test.ts'"
+
 [tasks.check]
-description = "Run every check: lint, types, the unit tier, the build, and its size; reads no network; writes dist/"
-depends = ["lint", "types", "test:unit", "build", "size"]
+description = "Run every check: lint, types, the unit tier, the build, its size, and the browser tier; reads no network; writes dist/"
+depends = ["lint", "types", "test:unit", "build", "size", "test:browser"]
