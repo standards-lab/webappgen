@@ -5,6 +5,7 @@ package integration_test
 import (
 	"encoding/json"
 	"os"
+	"os/exec"
 	"path"
 	"path/filepath"
 	"regexp"
@@ -207,6 +208,8 @@ func version(t *testing.T) string {
 func TestNewStandalone_Writes(t *testing.T) {
 	for _, tc := range []struct {
 		name    string
+		dir     string // the target's own name, under a temporary directory; empty is my-app
+		cd      string // the printed cd line's argument, {parent} the temporary directory; empty is the target as given
 		flags   []string
 		empty   bool
 		pkg     string // package.json's name, JSON-quoted
@@ -221,9 +224,20 @@ func TestNewStandalone_Writes(t *testing.T) {
 			flags: []string{"--name", "console", "--title", `Ops & "Console"`, "--base", "/app", "--api-base", "https://api.example.com/v1/"},
 			pkg:   `"console"`, title: "Ops &amp; &#34;Console&#34;", base: "/app/", apiBase: `"https://api.example.com/v1/"`,
 		},
+		{name: "dir with a space", dir: "My App", cd: "'{parent}/My App'", pkg: `"My App"`, title: "My App", base: "/", apiBase: `"/api/"`},
+		{name: "dir with a quote", dir: "it's", cd: `'{parent}/it'\''s'`, pkg: `"it's"`, title: "it&#39;s", base: "/", apiBase: `"/api/"`},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			dir := filepath.Join(t.TempDir(), "my-app")
+			parent := t.TempDir()
+			name := tc.dir
+			if name == "" {
+				name = "my-app"
+			}
+			dir := filepath.Join(parent, name)
+			cd := dir
+			if tc.cd != "" {
+				cd = strings.ReplaceAll(tc.cd, "{parent}", parent)
+			}
 			if tc.empty {
 				if err := os.Mkdir(dir, 0o755); err != nil {
 					t.Fatal(err)
@@ -235,9 +249,18 @@ func TestNewStandalone_Writes(t *testing.T) {
 			if res.Code != process.ExitOK {
 				t.Fatalf("code = %d, want %d; stderr = %q", res.Code, process.ExitOK, res.Stderr)
 			}
-			want := "Next steps:\n  cd " + dir + "\n  mise install\n  mise run install\n  mise run check\n"
+			want := "Next steps:\n  cd " + cd + "\n  mise install\n  mise run install\n  mise run check\n"
 			if res.Stdout != want {
 				t.Errorf("stdout = %q, want %q", res.Stdout, want)
+			}
+			// The printed cd line, pasted into a POSIX shell, lands in dir.
+			cdLine, _, _ := strings.Cut(strings.TrimPrefix(res.Stdout, "Next steps:\n  "), "\n")
+			if out, err := exec.Command("sh", "-c", cdLine+" && pwd -P").Output(); err != nil {
+				t.Errorf("sh -c %q: %v", cdLine+" && pwd -P", err)
+			} else if real, err := filepath.EvalSymlinks(dir); err != nil {
+				t.Fatal(err)
+			} else if got := strings.TrimSuffix(string(out), "\n"); got != real {
+				t.Errorf("sh -c %q printed %q, want %q", cdLine+" && pwd -P", got, real)
 			}
 			if res.Stderr != "" {
 				t.Errorf("stderr = %q, want empty", res.Stderr)

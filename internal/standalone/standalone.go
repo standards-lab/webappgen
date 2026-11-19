@@ -195,8 +195,23 @@ func ParseBase(base string) (string, error) {
 }
 
 // writeNextSteps writes to w the steps left to run in dir, the project's
-// directory, in order.
+// directory, in order, its cd line quoted by [shellQuote] so it pastes
+// into a POSIX shell as written.
 func writeNextSteps(w io.Writer, dir string, steps ...string) error {
-	_, err := fmt.Fprintf(w, "Next steps:\n  cd %s\n  %s\n", dir, strings.Join(steps, "\n  "))
+	_, err := fmt.Fprintf(w, "Next steps:\n  cd %s\n  %s\n", shellQuote(dir), strings.Join(steps, "\n  "))
 	return err
+}
+
+// shellQuote returns s as one POSIX shell word: as it is when it holds only
+// letters, digits, and /._-+:@,=, which no shell treats specially, and
+// otherwise in single quotes, each single quote within closing the quotes,
+// escaped with a backslash, and reopening them.
+func shellQuote(s string) string {
+	plain := func(r rune) bool {
+		return 'a' <= r && r <= 'z' || 'A' <= r && r <= 'Z' || '0' <= r && r <= '9' || strings.ContainsRune("/._-+:@,=", r)
+	}
+	if s != "" && strings.TrimLeftFunc(s, plain) == "" {
+		return s
+	}
+	return "'" + strings.ReplaceAll(s, "'", `'\''`) + "'"
 }
