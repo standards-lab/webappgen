@@ -15,8 +15,8 @@ const envPrefix = "WEBAPPGEN"
 // defineInfrastructure defines the infrastructure nodes on g into n: the
 // configurations, and the services the program is composed on, built from
 // them; the lifecycle configuration alone, as no webappgen command declares
-// a node yet. It constructs nothing. Every value is read or constructed in its node's
-// constructor, which runs only when a Build reaches the node, so
+// a node yet. It constructs nothing. Every value is read or constructed in
+// its node's constructor, which runs only when a Build reaches the node, so
 // configuration is read only for a command that declares a node, never in
 // [New] and never for a run that builds nothing. A service whose value
 // implements lifecycle.Subsystem takes part in startup and shutdown through

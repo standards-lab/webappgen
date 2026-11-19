@@ -103,12 +103,12 @@ func Command(version string) *cli.Command {
 			return writeNextSteps(inv.Stdout, o.dir, "mise run check")
 		},
 	}
-	fs := cmd.Flags()
-	fs.StringVar(&o.name, "name", "", "the project's `name` (default: the directory's name)")
-	fs.StringVar(&o.title, "title", "", "the page's `title` (default: the name)")
-	fs.StringVar(&o.base, "base", "/", "the absolute `path` the app is served under, written as its <base href>")
-	fs.StringVar(&o.apiBase, "api-base", "/api/", "the `URL` of the API the app calls, written to its config.json")
-	fs.BoolVar(&o.install, "install", false, "then run mise install and mise run install in the project")
+	flags := cmd.Flags()
+	flags.StringVar(&o.name, "name", "", "the project's `name` (default: the directory's name)")
+	flags.StringVar(&o.title, "title", "", "the page's `title` (default: the name)")
+	flags.StringVar(&o.base, "base", "/", "the absolute `path` the app is served under, written as its <base href>")
+	flags.StringVar(&o.apiBase, "api-base", "/api/", "the `URL` of the API the app calls, written to its config.json")
+	flags.BoolVar(&o.install, "install", false, "then run mise install and mise run install in the project")
 	return cmd
 }
 

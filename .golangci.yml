@@ -4,13 +4,19 @@ version: "2"
 
 linters:
   # The standard set (errcheck, govet, ineffassign, staticcheck, unused),
-  # plus testpackage, which keeps tests black-box. testpackage skips only
+  # plus nolintlint, which requires a suppression to name its linter and
+  # give its reason (architecture/principles/comments.md), and testpackage,
+  # which keeps tests black-box. testpackage skips only
   # export_test.go, the one white-box file allowed, and only to export a
   # clock or probe hook the API cannot reach deterministically; every other
   # test lives in <pkg>_test and drives the exported API.
   default: standard
   enable:
+    - nolintlint
     - testpackage
   settings:
+    nolintlint:
+      require-explanation: true
+      require-specific: true
     testpackage:
       skip-regexp: export_test\.go
