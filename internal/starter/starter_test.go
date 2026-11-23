@@ -10,6 +10,7 @@ import (
 
 	"github.com/standards-lab/webappgen/internal/project"
 	"github.com/standards-lab/webappgen/internal/project/projecttest"
+	"github.com/standards-lab/webappgen/internal/serviceapp"
 	"github.com/standards-lab/webappgen/internal/starter"
 )
 
@@ -61,5 +62,9 @@ func TestFiles_PinsTheCLIsTools(t *testing.T) {
 		case got != starterPins[entry]:
 			t.Errorf("mise.toml: %s = %s, want %s, as the starter pins it", entry, got, starterPins[entry])
 		}
+	}
+	air, pin, _ := strings.Cut(serviceapp.AirTool, " = ")
+	if got := rootPins["[tools] "+air]; got != pin {
+		t.Errorf("mise.toml: [tools] %s = %q, want %s, as the service-app kind's mise.toml edit pins it", air, got, pin)
 	}
 }

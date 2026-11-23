@@ -98,15 +98,16 @@ type options struct {
 // running gonew at [ToolsPin] through go run, its progress on stderr. It
 // then writes the client into the --client-dir in dir, never prompting:
 // the starter, then [Files] over it, rendered with the flags' [Values] and
-// version, the webappgen version writing it, and wires it into the
-// service's composition root with [Wire]. It then prints the next
-// steps, a cd into dir, git init, mise install, the client's mise install,
-// mise run install, and mise run build, run in its directory with mise -C,
-// and the service's mise run check, and exits 0. A go missing from PATH, a
-// gonew that fails, a client directory the copied template already holds
-// files in, a template [CheckWire] refuses, before the client is written,
-// or a template [Wire] finds an anchor missing from exits nonzero naming
-// it.
+// version, the webappgen version writing it, wires it into the
+// service's composition root with [Wire], and edits the service's tasks
+// and CI to build it with [EditConfig]. It then prints the next steps, a
+// cd into dir, git init, mise install, the client's mise install and mise
+// run install, run in its directory with mise -C, and the service's mise
+// run check, and exits 0. A go missing from PATH, a gonew that fails, a
+// client directory the copied template already holds files in, a template
+// [CheckWire] refuses, before the client is written, or a template [Wire]
+// finds an anchor missing from, or whose configuration [EditConfig] leaves
+// a file of, exits nonzero naming it.
 func Command(version string) *cli.Command {
 	var o options
 	cmd := &cli.Command{
@@ -125,7 +126,7 @@ func Command(version string) *cli.Command {
 			if err := project.CheckDir(client); err != nil {
 				return fmt.Errorf("--client-dir %q: the copied template holds it: %w", o.clientDir, err)
 			}
-			wiring, err := o.install(version)
+			wiring, config, err := o.install(version)
 			if err != nil {
 				return err
 			}
@@ -133,7 +134,12 @@ func Command(version string) *cli.Command {
 				return fmt.Errorf("the copied template lacks %s, where the client is wired in: report it against %s",
 					strings.Join(missing, ", "), TemplatePin)
 			}
-			return o.writeNextSteps(inv.Stdout, "git init")
+			for _, e := range config {
+				if !e.Applied {
+					return fmt.Errorf("the copied template's %s %s: report it against %s", e.Path, e.Reason(), TemplatePin)
+				}
+			}
+			return o.writeNextSteps(inv.Stdout, config, "git init")
 		},
 	}
 	o.define(cmd)
@@ -149,20 +155,28 @@ func (o *options) define(cmd *cli.Command) {
 	flags.StringVar(&o.clientDir, "client-dir", "client", "the `path` in the service the web client is written into")
 }
 
-func (o *options) install(version string) (Wiring, error) {
+func (o *options) install(version string) (Wiring, []ConfigEdit, error) {
 	if err := CheckWire(o.dir); err != nil {
-		return Wiring{}, err
+		return Wiring{}, nil, err
 	}
 	values := Values{
 		Name: o.name, Title: o.title, Base: o.base, APIBase: o.apiBase,
 		Package: PackageName(o.clientDir), Version: version,
 	}
 	if err := project.Write(filepath.Join(o.dir, filepath.FromSlash(o.clientDir)), values, starter.Files, Files); err != nil {
-		return Wiring{}, err
+		return Wiring{}, nil, err
 	}
-	return Wire(o.dir, o.module, WireOptions{
+	wiring, err := Wire(o.dir, o.module, WireOptions{
 		Base: o.base, Title: o.title, APIBase: o.apiBase, ClientDir: o.clientDir,
 	})
+	if err != nil {
+		return Wiring{}, nil, err
+	}
+	config, err := EditConfig(o.dir, o.clientDir)
+	if err != nil {
+		return Wiring{}, nil, err
+	}
+	return wiring, config, nil
 }
 
 func missingAnchors(wiring Wiring) []string {
@@ -175,10 +189,13 @@ func missingAnchors(wiring Wiring) []string {
 	return missing
 }
 
-func (o *options) writeNextSteps(w io.Writer, first ...string) error {
+func (o *options) writeNextSteps(w io.Writer, config []ConfigEdit, first ...string) error {
 	mise := "mise -C " + project.ShellQuote(o.clientDir)
-	steps := slices.Concat(first, []string{"mise install", mise + " install", mise + " run install", mise + " run build", "mise run check"})
-	return project.WriteNextSteps(w, o.dir, steps...)
+	steps := slices.Concat(first, []string{"mise install", mise + " install", mise + " run install"})
+	if !slices.ContainsFunc(config, func(e ConfigEdit) bool { return e.Path == MiseFile && e.Applied }) {
+		steps = append(steps, mise+" run build")
+	}
+	return project.WriteNextSteps(w, o.dir, append(steps, "mise run check")...)
 }
 
 func moduleDirArgs(args []string) error {

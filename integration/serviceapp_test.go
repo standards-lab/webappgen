@@ -21,6 +21,7 @@ import (
 	"github.com/standards-lab/go-core/process"
 
 	"github.com/standards-lab/webappgen/integration"
+	"github.com/standards-lab/webappgen/internal/serviceapp"
 )
 
 func TestNewServiceApp_Help(t *testing.T) {
@@ -214,7 +215,7 @@ func TestNewServiceApp_WritesTheClient(t *testing.T) {
 		t.Fatalf("code = %d, want %d; stderr = %q", res.Code, process.ExitOK, res.Stderr)
 	}
 	want := "Next steps:\n  cd " + dir + "\n  git init\n  mise install\n" +
-		"  mise -C web/My-UI install\n  mise -C web/My-UI run install\n  mise -C web/My-UI run build\n" +
+		"  mise -C web/My-UI install\n  mise -C web/My-UI run install\n" +
 		"  mise run check\n"
 	if res.Stdout != want {
 		t.Errorf("stdout = %q, want %q", res.Stdout, want)
@@ -233,6 +234,19 @@ func TestNewServiceApp_WritesTheClient(t *testing.T) {
 		".gitignore": {"\ndist/\n"},
 	} {
 		content := read(t, client, name)
+		for _, want := range wants {
+			if !strings.Contains(content, want) {
+				t.Errorf("%s = %q, want it to hold %q", name, content, want)
+			}
+		}
+	}
+	for name, wants := range map[string][]string{
+		"mise.toml": {serviceapp.AirTool, `run = "mise -C web/My-UI run build"`, `run = "mise -C web/My-UI run check"`,
+			"(mise -C web/My-UI exec -- pnpm exec vite build --watch) &\n"},
+		".github/workflows/ci.yml": {"          mise -C web/My-UI install\n", "          mise -C web/My-UI run build\n"},
+		".air.toml":                {`"web/My-UI/node_modules", "web/My-UI/src", "web/My-UI/test", "web/My-UI/scripts"`},
+	} {
+		content := read(t, dir, name)
 		for _, want := range wants {
 			if !strings.Contains(content, want) {
 				t.Errorf("%s = %q, want it to hold %q", name, content, want)
@@ -269,7 +283,7 @@ func TestNewServiceApp_WritesThenChecks(t *testing.T) {
 		t.Fatalf("code = %d, want %d; stderr = %q", res.Code, process.ExitOK, res.Stderr)
 	}
 	want := "Next steps:\n  cd " + dir + "\n  git init\n  mise install\n" +
-		"  mise -C client install\n  mise -C client run install\n  mise -C client run build\n" +
+		"  mise -C client install\n  mise -C client run install\n" +
 		"  mise run check\n"
 	if res.Stdout != want {
 		t.Errorf("stdout = %q, want %q", res.Stdout, want)
@@ -289,8 +303,9 @@ func TestNewServiceApp_WritesThenChecks(t *testing.T) {
 	if _, err := os.Stat(filepath.Join(client, "dist", ".vite", "manifest.json")); err != nil {
 		t.Fatalf("the client's check built no manifest: %v", err)
 	}
+	must(t, os.RemoveAll(filepath.Join(client, "dist")))
+	testService(ctx, t, dir, client, env)
 	runIn(ctx, t, dir, env, "go", "vet", "./...")
-	runIn(ctx, t, dir, env, "go", "test", "-count=1", "./...")
 
 	origin := serve(ctx, t, dir, env)
 	shell := wantShell(t, origin, "/", "/api/")
@@ -318,9 +333,8 @@ func TestNewServiceApp_ServesUnderABase(t *testing.T) {
 	defer cancel()
 	client := filepath.Join(dir, "web", "ui")
 	runIn(ctx, t, client, env, "mise", "run", "install")
-	runIn(ctx, t, client, env, "mise", "run", "build")
+	testService(ctx, t, dir, client, env)
 	runIn(ctx, t, dir, env, "go", "vet", "./...")
-	runIn(ctx, t, dir, env, "go", "test", "-count=1", "./...")
 
 	origin := serve(ctx, t, dir, env)
 	shell := wantShell(t, origin, "/app/", "https://api.example.com/v1/")
@@ -334,6 +348,14 @@ func TestNewServiceApp_ServesUnderABase(t *testing.T) {
 		if body := wantStatus(t, origin+p, http.StatusNotFound); body == shell {
 			t.Errorf("GET %s = the shell, want the service's answer outside the base", p)
 		}
+	}
+}
+
+func testService(ctx context.Context, t *testing.T, dir, client string, env []string) {
+	t.Helper()
+	runIn(ctx, t, dir, env, "mise", "run", "test")
+	if _, err := os.Stat(filepath.Join(client, "dist", ".vite", "manifest.json")); err != nil {
+		t.Fatalf("the service's mise run test built no client manifest: %v", err)
 	}
 }
 

@@ -29,12 +29,19 @@ import (
 // configuration.
 //
 // A valid run writes the client into the --client-dir, as [Command] does,
-// and wires it with [Wire], under the module go.mod declares. When every
-// anchor is found it prints the next steps, [Command]'s without git init,
-// and exits 0. When any is missing, the client and its client file are
-// written and no existing Go file is edited: it prints each edit left, its
-// file, its anchor, whether the anchor was found, and the code to insert,
-// and exits 1.
+// wires it with [Wire], under the module go.mod declares, and edits the
+// service's configuration with [EditConfig]. When every Go anchor is found
+// and every configuration file edited it prints the next steps, [Command]'s
+// without git init, and exits 0. Otherwise it prints each edit left, then
+// the next steps, and exits 1. When a Go anchor is missing, the client and
+// its client file are written and no existing Go file is edited, and each
+// Go edit is printed with its file, its anchor, whether the anchor was
+// found, and the code to insert. Each configuration file [EditConfig]
+// leaves as it is is printed with why it was left and each of its
+// insertions: its anchor, whether it was found, where it goes, and its
+// text. When the service's mise.toml was left, the next steps build the
+// client with its mise run build, run in its directory with mise -C, before
+// the service's mise run check.
 func InjectCommand(version string) *cli.Command {
 	var o options
 	cmd := &cli.Command{
@@ -46,18 +53,35 @@ func InjectCommand(version string) *cli.Command {
 			return o.validateService(inv.Args[0])
 		},
 		Run: func(_ context.Context, inv *cli.Invocation) error {
-			wiring, err := o.install(version)
+			wiring, config, err := o.install(version)
 			if err != nil {
 				return err
 			}
+			var left []string
 			if len(wiring.Left) > 0 {
 				if err := writeLeft(inv.Stdout, wiring); err != nil {
 					return err
 				}
-				return fmt.Errorf("the service lacks %s, where the client is wired in: apply the edits printed above by hand",
-					strings.Join(missingAnchors(wiring), ", "))
+				left = append(left, "the service lacks "+strings.Join(missingAnchors(wiring), ", ")+", where the client is wired in")
 			}
-			return o.writeNextSteps(inv.Stdout)
+			if err := writeConfigLeft(inv.Stdout, config, len(wiring.Left) > 0); err != nil {
+				return err
+			}
+			for _, e := range config {
+				if !e.Applied {
+					left = append(left, e.Path+" "+e.Reason())
+				}
+			}
+			if len(left) == 0 {
+				return o.writeNextSteps(inv.Stdout, config)
+			}
+			if _, err := io.WriteString(inv.Stdout, "\n"); err != nil {
+				return err
+			}
+			if err := o.writeNextSteps(inv.Stdout, config); err != nil {
+				return err
+			}
+			return fmt.Errorf("%s: apply the edits printed above by hand, then take the next steps", strings.Join(left, "; "))
 		},
 	}
 	o.define(cmd)

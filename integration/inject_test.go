@@ -221,7 +221,7 @@ func TestInjectServiceApp_WiresATemplateService(t *testing.T) {
 		t.Fatalf("code = %d, want %d; stderr = %q", res.Code, process.ExitOK, res.Stderr)
 	}
 	want := "Next steps:\n  cd " + dir + "\n  mise install\n" +
-		"  mise -C client install\n  mise -C client run install\n  mise -C client run build\n" +
+		"  mise -C client install\n  mise -C client run install\n" +
 		"  mise run check\n"
 	if res.Stdout != want {
 		t.Errorf("stdout = %q, want %q", res.Stdout, want)
@@ -243,9 +243,8 @@ func TestInjectServiceApp_WiresATemplateService(t *testing.T) {
 	ctx, cancel := context.WithTimeout(t.Context(), checkTimeout)
 	defer cancel()
 	runIn(ctx, t, client, env, "mise", "run", "install")
-	runIn(ctx, t, client, env, "mise", "run", "build")
+	testService(ctx, t, dir, client, env)
 	runIn(ctx, t, dir, env, "go", "vet", "./...")
-	runIn(ctx, t, dir, env, "go", "test", "-count=1", "./...")
 
 	origin := serve(ctx, t, dir, env)
 	shell := wantShell(t, origin, "/", "/api/")
@@ -275,7 +274,7 @@ func TestInjectServiceApp_LeavesTheEditsOnADifferentRoot(t *testing.T) {
 		t.Fatalf("code = %d, want %d; stderr = %q", res.Code, process.ExitFailure, res.Stderr)
 	}
 	wantErr := "webappgen inject service-app: the service lacks " + serviceapp.AnchorRouter +
-		", where the client is wired in: apply the edits printed above by hand\n"
+		", where the client is wired in: apply the edits printed above by hand, then take the next steps\n"
 	if res.Stderr != wantErr {
 		t.Errorf("stderr = %q, want %q", res.Stderr, wantErr)
 	}
@@ -299,8 +298,78 @@ func TestInjectServiceApp_LeavesTheEditsOnADifferentRoot(t *testing.T) {
 		"\ninternal/app/app.go, at " + serviceapp.AnchorNew + " (found): insert this call before it\n" +
 		"\tdefineClient(a.graph, &a.nodes)\n" +
 		"\ninternal/app/server.go, at " + serviceapp.AnchorRouter + " (missing): insert this call before it\n" +
-		"\tmountClient(router, s, n)\n"
+		"\tmountClient(router, s, n)\n" +
+		"\nNext steps:\n  cd " + dir + "\n  mise install\n" +
+		"  mise -C web/ui install\n  mise -C web/ui run install\n" +
+		"  mise run check\n"
 	if res.Stdout != want {
 		t.Errorf("stdout =\n%s\nwant\n%s", res.Stdout, want)
+	}
+}
+
+func TestInjectServiceApp_LeavesTheConfigEditsOnDifferingFiles(t *testing.T) {
+	dir := filepath.Join(t.TempDir(), "my-service")
+	copyTemplate(t, goOffline(t), dir)
+	for name, change := range map[string][2]string{
+		"mise.toml":                {`jq = "1.8.2"`, `jq = "1.8.3"`},
+		".github/workflows/ci.yml": {"jdx/mise-action@v5.2.10", "jdx/mise-action@v5.3.0"},
+	} {
+		src := read(t, dir, name)
+		if !strings.Contains(src, change[0]) {
+			t.Fatalf("%s = %q, want it to hold %s", name, src, change[0])
+		}
+		must(t, os.WriteFile(filepath.Join(dir, filepath.FromSlash(name)), []byte(strings.ReplaceAll(src, change[0], change[1])), 0o644))
+	}
+	must(t, os.WriteFile(filepath.Join(dir, ".air.toml"), []byte("root = \".\"\n"), 0o644))
+	before := map[string]string{}
+	for _, name := range []string{"mise.toml", ".github/workflows/ci.yml", ".air.toml"} {
+		before[name] = read(t, dir, name)
+	}
+
+	res := integration.Run(t, "inject", "service-app", dir)
+
+	if res.Code != process.ExitFailure {
+		t.Fatalf("code = %d, want %d; stderr = %q", res.Code, process.ExitFailure, res.Stderr)
+	}
+	wantErr := "webappgen inject service-app: " +
+		"mise.toml lacks [tools] as go-web-sdk-template has it; " +
+		".github/workflows/ci.yml lacks the check job, the integration job as go-web-sdk-template has it; " +
+		".air.toml exists: apply the edits printed above by hand, then take the next steps\n"
+	if res.Stderr != wantErr {
+		t.Errorf("stderr = %q, want %q", res.Stderr, wantErr)
+	}
+	for name, src := range before {
+		if after := read(t, dir, name); after != src {
+			t.Errorf("%s changed:\n%s", name, after)
+		}
+	}
+	if got := read(t, dir, "internal/app/app.go"); !strings.Contains(got, "defineClient(a.graph, &a.nodes)") {
+		t.Errorf("internal/app/app.go = %q, want the client wired in", got)
+	}
+	for _, want := range []string{
+		"Edited no mise.toml: it lacks [tools] as go-web-sdk-template has it. Make these edits by hand:\n" +
+			"\nmise.toml, at [tools] (missing): add this pin at its start\n\t" + serviceapp.AirTool + "\n" +
+			"\nmise.toml, at [tasks.check] (found): add this line after its header\n" +
+			"\tdepends = [\"client:build\", \"client:check\"]\n",
+		"\nmise.toml: append these tables to it\n\t[tasks.\"client:build\"]\n",
+		"\tdepends = [\"client:build\"]\n\trun = \"mise -C client run check\"\n\n\t[tasks.dev]\n",
+		"\nEdited no .github/workflows/ci.yml: it lacks the check job, the integration job as go-web-sdk-template has it. " +
+			"Make these edits by hand:\n" +
+			"\n.github/workflows/ci.yml, at the check job (missing): insert these steps before its mise run check step\n" +
+			"\t      - name: Install the web client's tools and packages\n",
+		"\n.github/workflows/ci.yml, at the integration job (missing): insert these steps before its go test -tags integration step\n",
+		"\nEdited no .air.toml: it exists. Make this edit by hand:\n\n.air.toml: write it with this text\n" +
+			"\t# The service's live reload under air, which mise run dev runs.\n",
+		"\tsend_interrupt = true\n",
+		"\tclean_on_exit = true\n\nNext steps:\n  cd " + dir + "\n  mise install\n" +
+			"  mise -C client install\n  mise -C client run install\n  mise -C client run build\n" +
+			"  mise run check\n",
+	} {
+		if !strings.Contains(res.Stdout, want) {
+			t.Errorf("stdout =\n%s\nwant it to hold\n%s", res.Stdout, want)
+		}
+	}
+	if !strings.HasPrefix(res.Stdout, "Edited no mise.toml") {
+		t.Errorf("stdout = %q, want it to begin with the mise.toml edit", res.Stdout)
 	}
 }

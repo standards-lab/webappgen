@@ -14,7 +14,7 @@ fail() {
   exit 1
 }
 
-for tool in actionlint go golangci-lint jq node pnpm shellcheck tsc chrome-headless-shell; do
+for tool in actionlint air go golangci-lint jq node pnpm shellcheck tsc chrome-headless-shell; do
   mise which "$tool" >/dev/null 2>&1 || fail "$tool (mise.toml)"
 done
 GOPROXY=off go mod download >/dev/null 2>&1 || fail "go.mod's module cache"

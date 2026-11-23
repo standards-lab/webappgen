@@ -13,5 +13,8 @@
 // client into the service's composition root: the client file it writes,
 // and its edits at the template's anchors, applied all together or left
 // all together; [CheckWire] refuses a service Wire would refuse, before
-// anything is written.
+// anything is written. [EditConfig] edits the service's mise.toml and CI
+// workflow, each only when it holds the pinned template's text where the
+// edit goes, so its tasks and CI build the client, and writes its
+// .air.toml for the dev loop, never over one that exists.
 package serviceapp
