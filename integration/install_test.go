@@ -84,7 +84,7 @@ func TestNewStandalone_InstallThenCheck(t *testing.T) {
 			t.Errorf("stderr = %q, want it to name %q", res.Stderr, want)
 		}
 	}
-	for _, layer := range []string{"web-foundation", "web-components", "web-app-sdk", "web-tooling"} {
+	for _, layer := range []string{"web-foundation", "web-icons", "web-components", "web-app-sdk", "web-tooling"} {
 		if _, err := os.Stat(filepath.Join(dir, "node_modules", "@standards-lab", layer, "package.json")); err != nil {
 			t.Errorf("--install didn't install @standards-lab/%s: %v", layer, err)
 		}

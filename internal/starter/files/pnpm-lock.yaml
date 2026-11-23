@@ -12,11 +12,14 @@ importers:
         specifier: github:standards-lab/web-app-sdk#v0.1.0
         version: https://codeload.github.com/standards-lab/web-app-sdk/tar.gz/4d5371259a7cc69e039a19e043431f2d1665727c
       '@standards-lab/web-components':
-        specifier: github:standards-lab/web-components#v0.1.0
-        version: https://codeload.github.com/standards-lab/web-components/tar.gz/9768cd0ac06ca76a145f7eee218a5284348e5d6f(@standards-lab/web-foundation@https://codeload.github.com/standards-lab/web-foundation/tar.gz/f8b3edc0dc658cfff64ec4eb60b5dd7019798b0b)
+        specifier: github:standards-lab/web-components#v0.2.0
+        version: https://codeload.github.com/standards-lab/web-components/tar.gz/5ab6eb335389f38ac2b8465d6bf17a5a78f38646(@standards-lab/web-foundation@https://codeload.github.com/standards-lab/web-foundation/tar.gz/67b3b6cd1a60dc4ce420039a2b584961f68d201f)(@standards-lab/web-icons@https://codeload.github.com/standards-lab/web-icons/tar.gz/499927708dcf386e0cff3de7ba84a10eaf19fa1a(vite@8.3.8(@types/node@26.6.6)))
       '@standards-lab/web-foundation':
-        specifier: github:standards-lab/web-foundation#v0.3.0
-        version: https://codeload.github.com/standards-lab/web-foundation/tar.gz/f8b3edc0dc658cfff64ec4eb60b5dd7019798b0b
+        specifier: github:standards-lab/web-foundation#v0.4.0
+        version: https://codeload.github.com/standards-lab/web-foundation/tar.gz/67b3b6cd1a60dc4ce420039a2b584961f68d201f
+      '@standards-lab/web-icons':
+        specifier: github:standards-lab/web-icons#v0.1.0
+        version: https://codeload.github.com/standards-lab/web-icons/tar.gz/499927708dcf386e0cff3de7ba84a10eaf19fa1a(vite@8.3.8(@types/node@26.6.6))
     devDependencies:
       '@eslint/js':
         specifier: 10.0.1
@@ -275,15 +278,25 @@ packages:
       '@nats-io/nats-core':
         optional: true
 
-  '@standards-lab/web-components@https://codeload.github.com/standards-lab/web-components/tar.gz/9768cd0ac06ca76a145f7eee218a5284348e5d6f':
-    resolution: {gitHosted: true, integrity: sha512-ENYjDo+ZbK7DJ2G2eoN5hC/GPo4tYRna/GT6esUkG817hG6UuDTFYPWXIAaoX6/wL489HmgmegvjQlW62Lakig==, tarball: https://codeload.github.com/standards-lab/web-components/tar.gz/9768cd0ac06ca76a145f7eee218a5284348e5d6f}
+  '@standards-lab/web-components@https://codeload.github.com/standards-lab/web-components/tar.gz/5ab6eb335389f38ac2b8465d6bf17a5a78f38646':
+    resolution: {gitHosted: true, integrity: sha512-ykIUL3BLBko47MuaKlvSzGRIJ1Geg5y87Hu/DJqfABMr3i/nLwdt7uTYaiRXV0O6JojjjzMzs82nq87Zbkzr1w==, tarball: https://codeload.github.com/standards-lab/web-components/tar.gz/5ab6eb335389f38ac2b8465d6bf17a5a78f38646}
+    version: 0.2.0
+    peerDependencies:
+      '@standards-lab/web-foundation': ^0.4.0
+      '@standards-lab/web-icons': ^0.1.0
+
+  '@standards-lab/web-foundation@https://codeload.github.com/standards-lab/web-foundation/tar.gz/67b3b6cd1a60dc4ce420039a2b584961f68d201f':
+    resolution: {gitHosted: true, integrity: sha512-XHEQUH+IRxncWqdaNLgRFjpF6f4Jc9WJWTh/7weKEbrjbha2nDgfj+pdwsKITbcuXOqqgqc2Dyx1lr/q7nlQsg==, tarball: https://codeload.github.com/standards-lab/web-foundation/tar.gz/67b3b6cd1a60dc4ce420039a2b584961f68d201f}
+    version: 0.4.0
+
+  '@standards-lab/web-icons@https://codeload.github.com/standards-lab/web-icons/tar.gz/499927708dcf386e0cff3de7ba84a10eaf19fa1a':
+    resolution: {gitHosted: true, integrity: sha512-oiiC6Qi9kuhp3arxvQt3zi4Y98DhRmIYGP2cA/W3TF4MyHYTWlFCGZ0wWIvmaK4NDTqsLdc5xfemPZin+ZP+dg==, tarball: https://codeload.github.com/standards-lab/web-icons/tar.gz/499927708dcf386e0cff3de7ba84a10eaf19fa1a}
     version: 0.1.0
     peerDependencies:
-      '@standards-lab/web-foundation': ^0.3.0
-
-  '@standards-lab/web-foundation@https://codeload.github.com/standards-lab/web-foundation/tar.gz/f8b3edc0dc658cfff64ec4eb60b5dd7019798b0b':
-    resolution: {gitHosted: true, integrity: sha512-yOEDzhuWiRQt9+0KTv3hj4GOqGOx6uvQQLi7es9GqR+gENMp2nM+LZ/fp1vNYP3VktDeyXIxTLjyjLGysYTtWA==, tarball: https://codeload.github.com/standards-lab/web-foundation/tar.gz/f8b3edc0dc658cfff64ec4eb60b5dd7019798b0b}
-    version: 0.3.0
+      vite: ^8.3.8
+    peerDependenciesMeta:
+      vite:
+        optional: true
 
   '@standards-lab/web-tooling@https://codeload.github.com/standards-lab/web-tooling/tar.gz/24363f36750fe287250ac8b48310b6e02f22f794':
     resolution: {gitHosted: true, integrity: sha512-D+0nTntEPlGCsjg82qXCVPb0INy38/uyiEbYbewQ+gq7pGSMMd9Mw1BDL2/VbuIQMI17cxXRKnnPZDrvP9eAyg==, tarball: https://codeload.github.com/standards-lab/web-tooling/tar.gz/24363f36750fe287250ac8b48310b6e02f22f794}
@@ -998,13 +1011,18 @@ snapshots:
 
   '@standards-lab/web-app-sdk@https://codeload.github.com/standards-lab/web-app-sdk/tar.gz/4d5371259a7cc69e039a19e043431f2d1665727c': {}
 
-  '@standards-lab/web-components@https://codeload.github.com/standards-lab/web-components/tar.gz/9768cd0ac06ca76a145f7eee218a5284348e5d6f(@standards-lab/web-foundation@https://codeload.github.com/standards-lab/web-foundation/tar.gz/f8b3edc0dc658cfff64ec4eb60b5dd7019798b0b)':
+  '@standards-lab/web-components@https://codeload.github.com/standards-lab/web-components/tar.gz/5ab6eb335389f38ac2b8465d6bf17a5a78f38646(@standards-lab/web-foundation@https://codeload.github.com/standards-lab/web-foundation/tar.gz/67b3b6cd1a60dc4ce420039a2b584961f68d201f)(@standards-lab/web-icons@https://codeload.github.com/standards-lab/web-icons/tar.gz/499927708dcf386e0cff3de7ba84a10eaf19fa1a(vite@8.3.8(@types/node@26.6.6)))':
     dependencies:
-      '@standards-lab/web-foundation': https://codeload.github.com/standards-lab/web-foundation/tar.gz/f8b3edc0dc658cfff64ec4eb60b5dd7019798b0b
+      '@standards-lab/web-foundation': https://codeload.github.com/standards-lab/web-foundation/tar.gz/67b3b6cd1a60dc4ce420039a2b584961f68d201f
+      '@standards-lab/web-icons': https://codeload.github.com/standards-lab/web-icons/tar.gz/499927708dcf386e0cff3de7ba84a10eaf19fa1a(vite@8.3.8(@types/node@26.6.6))
       lit: 3.3.3
       marked: 18.2.1
 
-  '@standards-lab/web-foundation@https://codeload.github.com/standards-lab/web-foundation/tar.gz/f8b3edc0dc658cfff64ec4eb60b5dd7019798b0b': {}
+  '@standards-lab/web-foundation@https://codeload.github.com/standards-lab/web-foundation/tar.gz/67b3b6cd1a60dc4ce420039a2b584961f68d201f': {}
+
+  '@standards-lab/web-icons@https://codeload.github.com/standards-lab/web-icons/tar.gz/499927708dcf386e0cff3de7ba84a10eaf19fa1a(vite@8.3.8(@types/node@26.6.6))':
+    optionalDependencies:
+      vite: 8.3.8(@types/node@26.6.6)
 
   '@standards-lab/web-tooling@https://codeload.github.com/standards-lab/web-tooling/tar.gz/24363f36750fe287250ac8b48310b6e02f22f794': {}
 

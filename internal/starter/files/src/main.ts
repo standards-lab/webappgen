@@ -1,15 +1,20 @@
 // The app's entry, the module the page loads after the render-blocking theme module (theme.ts):
-// the foundation's full page stylesheet, page-full.css, whose profiles theme.ts registers, and the
-// app's layout, app.css, after it, which Vite bundles as CSS; the foundation's keys.js, which binds
-// the header's Settings button to S by its data-keys; then the config, read once; then the router,
-// over the page's <main>, which mounts the home view at the base and the not-found view at any
-// other path. The router's base is the document's <base href>; links are relative to it. Each view
-// loads on its first visit.
+// the foundation's full page stylesheet, page-full.css, whose profiles theme.ts registers, then its
+// glyph-button, dialog, and layout sheets, which Vite bundles as CSS; the foundation's keys.js,
+// which binds the header's Help and Settings buttons to ? and S by their data-keys; the
+// components' sl-settings and sl-shortcuts, which the page's dialogs hold; then the config, read
+// once; then the router, over the page's <main>, which mounts the home view at the base and the
+// not-found view at any other path. The router's base is the document's <base href>; links are
+// relative to it. Each view loads on its first visit.
 // Adapted from spike-html-apps (2883d78): apps/pipeline/src/main.ts, its config and router alone.
 
 import "@standards-lab/web-foundation/page-full.css";
-import "./app.css";
+import "@standards-lab/web-foundation/glyph-button.css";
+import "@standards-lab/web-foundation/dialog.css";
+import "@standards-lab/web-foundation/layout.css";
 import "@standards-lab/web-foundation/keys.js";
+import "@standards-lab/web-components/settings.js";
+import "@standards-lab/web-components/shortcuts.js";
 
 import { createRouter } from "@standards-lab/web-app-sdk/router.js";
 

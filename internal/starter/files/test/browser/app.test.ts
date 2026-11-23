@@ -1,16 +1,16 @@
 // The build, served as a static host serves it, under the base its <base href> names: the home view
-// at the base, with the config's API base and the components' status badge; the not-found view at
-// any other path, its link back home taken by the router; and a deep link and a reload, which the
-// host answers with the page, reach the right view. The header and the view sit inside gutters,
-// off the viewport's edges. Every asset loads, under the base, which the
-// document's base URI, Vite's base, and the router's agree on.
+// at the base, with the config's API base; the not-found view at any other path, its link back
+// home taken by the router; and a deep link and a reload, which the host answers with the page,
+// reach the right view. The page is the foundation's application page, and its header and view sit
+// inside the layout sheet's gutters, off the viewport's edges. Every asset loads, under the base,
+// which the document's base URI, Vite's base, and the router's agree on.
 // Adapted from spike-html-apps (2883d78): test/browser/base.test.ts, on a static host.
 
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { after, before, test } from "node:test";
 
-import { launch, until } from "@standards-lab/web-tooling/browser.js";
+import { launch } from "@standards-lab/web-tooling/browser.js";
 import type { Browser, Page } from "@standards-lab/web-tooling/browser.js";
 
 import { click, mounted, openWith, reload, route } from "./support/app.ts";
@@ -81,26 +81,22 @@ function assertAllUnderBase({ responses, failures }: Logged): void {
   );
 }
 
-test("the base shows the home view, with the config's API base and a status badge", async (t) => {
+test("the base shows the home view, with the config's API base", async (t) => {
   const logged = await open(app.base, t);
   const { page } = logged;
   await mounted(page, "app-home");
   assert.deepEqual(await route(page), { path: app.base, tag: "app-home" });
   assert.equal(await page.evaluate("document.baseURI"), `${app.origin}${app.base}`);
   assert.equal(await page.evaluate("document.querySelector('app-home code').textContent"), apiBase);
-  // The components' element is defined and has rendered its label into its shadow root.
-  await until(
-    page,
-    "document.querySelector('app-home sl-status-badge')?.shadowRoot?.querySelector('button')?.textContent === 'ready'",
-  );
   assertAllUnderBase(logged);
 });
 
-test("the header and the view sit inside gutters, off the viewport's edges", async (t) => {
+test("the application page's header and view sit inside the layout's gutters", async (t) => {
   const { page } = await open(app.base, t);
   await mounted(page, "app-home");
+  assert.equal(await page.evaluate("document.body.className"), "page-app");
   const gutters: Record<string, { left: number; right: number }> = await page.evaluate(`
-    Object.fromEntries(["header h1", "header button", "app-home h2"].map((selector) => {
+    Object.fromEntries(["header h1", "header .header-actions", "app-home h2"].map((selector) => {
       const box = document.querySelector(selector).getBoundingClientRect();
       return [selector, { left: box.left, right: document.documentElement.clientWidth - box.right }];
     }))`);

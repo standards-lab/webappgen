@@ -160,7 +160,6 @@ var written = []string{
 	"scripts/preflight.sh",
 	"scripts/size.ts",
 	"src",
-	"src/app.css",
 	"src/config.ts",
 	"src/main.ts",
 	"src/theme.ts",
@@ -170,6 +169,8 @@ var written = []string{
 	"test",
 	"test/browser",
 	"test/browser/app.test.ts",
+	"test/browser/dialogs.test.ts",
+	"test/browser/glyphs.test.ts",
 	"test/browser/support",
 	"test/browser/support/app.ts",
 	"test/browser/support/build.ts",
@@ -336,7 +337,7 @@ func TestNewStandalone_Pins(t *testing.T) {
 		t.Error(`package.json: "private" isn't true`)
 	}
 	lock := read(t, dir, "pnpm-lock.yaml")
-	for _, layer := range []string{"web-foundation", "web-components", "web-app-sdk", "web-tooling"} {
+	for _, layer := range []string{"web-foundation", "web-icons", "web-components", "web-app-sdk", "web-tooling"} {
 		name := "@standards-lab/" + layer
 		spec, ok := manifest.Dependencies[name]
 		if !ok {

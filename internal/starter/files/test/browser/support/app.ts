@@ -1,8 +1,9 @@
-// The browser tier's reading of the app: which view a page shows, and the navigations a person
-// makes, through the DevTools Protocol. Each wait is web-tooling's page wait, until, which polls an
-// expression inside the page.
+// The browser tier's reading of the app: which view a page shows, and the navigations and key
+// presses a person makes, through the DevTools Protocol. Each wait is web-tooling's page wait,
+// until, which polls an expression inside the page.
 // Adapted from spike-html-apps (2883d78): test/browser/support/app.ts, its route, mounted, reload,
 // and openWith.
+// Adapted from web-components (6052866): test/browser/shortcut-dialogs.test.ts, its press.
 
 import { until } from "@standards-lab/web-tooling/browser.js";
 import type { Browser, Page } from "@standards-lab/web-tooling/browser.js";
@@ -35,6 +36,24 @@ export async function click(page: Page, selector: string): Promise<void> {
   for (const type of ["mousePressed", "mouseReleased"]) {
     await page.cdp("Input.dispatchMouseEvent", { type, x, y, button: "left", clickCount: 1 });
   }
+}
+
+/** The keys the tests press, each as the DevTools Protocol's key events describe it. */
+const KEYS = {
+  s: { key: "s", code: "KeyS", windowsVirtualKeyCode: 83, text: "s" },
+  "?": { key: "?", code: "Slash", windowsVirtualKeyCode: 191, modifiers: 8, text: "?" },
+  Escape: { key: "Escape", code: "Escape", windowsVirtualKeyCode: 27 },
+};
+
+/** Presses and releases `name`, as a keyboard does, on the page's focused element. */
+export async function press(page: Page, name: keyof typeof KEYS): Promise<void> {
+  const { text, ...key } = { text: undefined, ...KEYS[name] };
+  await page.cdp("Input.dispatchKeyEvent", {
+    type: text === undefined ? "rawKeyDown" : "keyDown",
+    ...key,
+    ...(text === undefined ? {} : { text, unmodifiedText: text }),
+  });
+  await page.cdp("Input.dispatchKeyEvent", { type: "keyUp", ...key });
 }
 
 /** Reloads the page, as the browser's button does, resolving once the new document has loaded. */

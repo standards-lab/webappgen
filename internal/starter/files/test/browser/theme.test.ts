@@ -1,9 +1,8 @@
-// The theme: the header's Settings button, and the S key through the foundation's keys.js, open
-// the theme menu, which the render-blocking theme module defines and which lists every profile the
-// full entry registers; and a non-default theme choice stored under the foundation's key is on the
-// root element before the browser first paints. The first-paint case holds every script's fetch,
-// and the same build with blocking="render" stripped from its page paints the defaults first: the
-// case fails without the render-blocking module.
+// The theme: a color picked in the Settings dialog's sl-settings is on the root element and stored
+// under the foundation's key at once, with no Save, and a reload keeps it; and a non-default theme
+// choice stored under that key is on the root element before the browser first paints. The
+// first-paint case holds every script's fetch, and the same build with blocking="render" stripped
+// from its page paints the defaults first: the case fails without the render-blocking module.
 // Adapted from spike-html-apps (2883d78): test/browser/theme.test.ts, on the full entry.
 
 import assert from "node:assert/strict";
@@ -12,14 +11,14 @@ import { after, before, describe, test } from "node:test";
 import { launch, until } from "@standards-lab/web-tooling/browser.js";
 import type { Browser } from "@standards-lab/web-tooling/browser.js";
 
-import { click, mounted, openWith } from "./support/app.ts";
+import { mounted, openWith, press, reload } from "./support/app.ts";
 import { serveBuild } from "./support/build.ts";
 import type { Served } from "./support/build.ts";
 
 /** The foundation's localStorage key for the choice (its preferences.js KEY). */
 const KEY = "web-foundation.preferences";
 
-/** A choice off every facet's default, which only the full entry registers, as the theme menu
+/** A choice off every facet's default, which only the full entry registers, as sl-settings
  * stores it. */
 const CHOICE = { color: "catppuccin", space: "compact", type: "sans", scheme: "dark" };
 
@@ -30,12 +29,6 @@ const APPLIED = {
   "data-type": "sans",
   "data-scheme": "dark",
 };
-
-/** The open menu's options, each section's radio values in order. */
-const OPTIONS = `Object.fromEntries([...document.querySelectorAll('sl-theme-menu [data-section]')].map((section) => [section.dataset.section, [...section.querySelectorAll('input')].map((input) => input.value)]))`;
-
-/** Whether the theme menu's dialog is open. */
-const OPEN = "document.querySelector('sl-theme-menu dialog')?.open === true";
 
 /** The root element's theme attributes. */
 const ROOTED = `Object.fromEntries(["data-palette", "data-space", "data-type", "data-scheme"].map((name) => [name, document.documentElement.getAttribute(name)]))`;
@@ -56,31 +49,37 @@ after(async () => {
   await plain?.stop();
 });
 
-test("the header's Settings button opens the theme menu, listing every built-in profile", async (t) => {
+test("a color picked in Settings is on the root and stored at once, and a reload keeps it", async (t) => {
   const page = await browser.open(`${app.origin}${app.base}`);
-  t.after(() => page.close());
-  await mounted(page, "app-home");
-  await click(page, "header button");
-  await until(page, OPEN);
-  assert.deepEqual(await page.evaluate(OPTIONS), {
-    color: ["zen", "github", "catppuccin", "everforest"],
-    scheme: ["system", "light", "dark"],
-    space: ["regular", "compact"],
-    type: ["mono", "sans"],
+  t.after(async () => {
+    await page.evaluate("localStorage.clear()").catch(() => {});
+    await page.close();
   });
-});
-
-test("the S key opens the Settings menu", async (t) => {
-  const page = await browser.open(`${app.origin}${app.base}`);
-  t.after(() => page.close());
   await mounted(page, "app-home");
-  // keys.js marks each element it binds, so the binding is live before the key is pressed.
-  await until(page, "document.querySelector('header button')?.hasAttribute('aria-keyshortcuts')");
-  assert.equal(await page.evaluate(OPEN), false);
-  for (const type of ["keyDown", "keyUp"]) {
-    await page.cdp("Input.dispatchKeyEvent", { type, key: "s", code: "KeyS", text: "s" });
-  }
-  await until(page, OPEN);
+  await until(
+    page,
+    "document.querySelector('[data-keys=\"s\"]')?.hasAttribute('aria-keyshortcuts')",
+  );
+  await press(page, "s");
+  await until(page, "document.querySelector('#settings').open");
+  await page.evaluate(
+    `document.querySelector("sl-settings").shadowRoot.querySelector('input[name="color"][value="everforest"]').click()`,
+  );
+  assert.equal(
+    await page.evaluate("document.documentElement.getAttribute('data-palette')"),
+    "everforest",
+  );
+  assert.equal(
+    await page.evaluate(`JSON.parse(localStorage.getItem(${JSON.stringify(KEY)})).color`),
+    "everforest",
+  );
+
+  await reload(page);
+  await mounted(page, "app-home");
+  assert.equal(
+    await page.evaluate("document.documentElement.getAttribute('data-palette')"),
+    "everforest",
+  );
 });
 
 // The first paint, against the moment the stored choice reaches the root. Every script's fetch is

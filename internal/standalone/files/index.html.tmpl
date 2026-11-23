@@ -1,13 +1,14 @@
 <!doctype html>
-<!-- The app's page. Its <base href> is the absolute path the app is served under, which
+<!-- The app's page, the foundation's application page type (body.page-app), laid out by its
+     layout sheet. Its <base href> is the absolute path the app is served under, which
      vite.config.ts's base agrees with: every relative URL the app reads, config.json among them,
      resolves under it, and the router's routes are relative to it. The build puts the theme
-     module (src/theme.ts) ahead of the entry with blocking="render", so the stored theme is on
-     the root before first paint. The header's Settings button, a foundation .button, opens
-     <sl-theme-menu>, which the theme module defines, by the invoker command; its data-keys="s"
-     binds S to it through the foundation's keys.js, which the entry loads. The router mounts each
-     view in <main>; src/app.css lays out the header and the main column.
-     Adapted from spike-html-apps (2883d78): test/consumers/app/index.html. -->
+     module (src/theme.ts) ahead of the entry with blocking="render". The header's glyph buttons
+     open the Help and Settings dialogs by the invoker command, and their data-keys bind ? and S
+     through the foundation's keys.js, which the entry loads; web-icons' iconFill() fills each
+     data-icon marker. The router mounts each view in <main>.
+     Adapted from spike-html-apps (2883d78): test/consumers/app/index.html.
+     Adapted from web-components (6052866): demo/components.html, its header actions and dialogs. -->
 <html lang="en">
   <head>
     <meta charset="utf-8" />
@@ -16,14 +17,78 @@
     <title>{{html .Title}}</title>
     <script type="module" src="./src/main.ts"></script>
   </head>
-  <body>
+  <body class="page-app">
     <header>
       <h1>{{html .Title}}</h1>
-      <button class="button" type="button" commandfor="settings" command="--open" data-keys="s">
-        Settings <kbd>S</kbd>
-      </button>
+      <div class="header-actions">
+        <button
+          type="button"
+          class="glyph-button"
+          commandfor="help"
+          command="show-modal"
+          aria-label="Help"
+          aria-description=""
+          data-keys="?"
+          interestfor="help-hint"
+        >
+          <svg data-icon="octicon/question-16"></svg>
+          <span aria-hidden="true"><kbd>?</kbd></span>
+        </button>
+        <div id="help-hint" class="glyph-hint" popover="hint" aria-hidden="true">Help</div>
+        <button
+          type="button"
+          class="glyph-button"
+          commandfor="settings"
+          command="show-modal"
+          aria-label="Settings"
+          aria-description=""
+          data-keys="s"
+          interestfor="settings-hint"
+        >
+          <svg data-icon="octicon/gear-16"></svg>
+          <span aria-hidden="true"><kbd>S</kbd></span>
+        </button>
+        <div id="settings-hint" class="glyph-hint" popover="hint" aria-hidden="true">Settings</div>
+      </div>
     </header>
     <main></main>
-    <sl-theme-menu id="settings"></sl-theme-menu>
+    <dialog id="help" class="dialog-fit" aria-labelledby="help-title">
+      <header class="dialog-header">
+        <h2 id="help-title" tabindex="-1" autofocus>Keyboard shortcuts</h2>
+        <button
+          type="button"
+          class="glyph-button"
+          commandfor="help"
+          command="close"
+          aria-label="Close"
+          aria-description=""
+          interestfor="help-close-hint"
+        >
+          <svg data-icon="octicon/x-16"></svg>
+          <span aria-hidden="true"><kbd>Esc</kbd></span>
+        </button>
+        <div id="help-close-hint" class="glyph-hint" popover="hint" aria-hidden="true">Close</div>
+      </header>
+      <sl-shortcuts></sl-shortcuts>
+    </dialog>
+    <dialog id="settings" class="dialog-wide" aria-labelledby="settings-title">
+      <header class="dialog-header">
+        <h2 id="settings-title">Settings</h2>
+        <button
+          type="button"
+          class="glyph-button"
+          commandfor="settings"
+          command="close"
+          aria-label="Close"
+          aria-description=""
+          interestfor="settings-close-hint"
+        >
+          <svg data-icon="octicon/x-16"></svg>
+          <span aria-hidden="true"><kbd>Esc</kbd></span>
+        </button>
+        <div id="settings-close-hint" class="glyph-hint" popover="hint" aria-hidden="true">Close</div>
+      </header>
+      <sl-settings></sl-settings>
+    </dialog>
   </body>
 </html>

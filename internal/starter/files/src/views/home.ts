@@ -1,8 +1,5 @@
-// The home view, at the base: a heading, the API the config names, and the components' status
-// badge. It renders into light DOM, so the page's foundation sheet styles it. Loaded on its first
-// visit.
-
-import "@standards-lab/web-components/status-badge.js";
+// The home view, at the base: a heading and the API the config names. It renders into light DOM,
+// so the page's foundation sheet styles it. Loaded on its first visit.
 
 import { appConfig } from "../config.ts";
 
@@ -17,9 +14,7 @@ class AppHome extends HTMLElement {
     const code = document.createElement("code");
     code.textContent = appConfig().apiBase;
     api.append("The app calls its API at ", code, ".");
-    const badge = document.createElement("sl-status-badge");
-    badge.setAttribute("label", "ready");
-    this.replaceChildren(heading, api, badge);
+    this.replaceChildren(heading, api);
   }
 }
 
