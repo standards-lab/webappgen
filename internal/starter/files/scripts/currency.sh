@@ -2,8 +2,6 @@
 # Prints `<where>: <item> <pin> -> <latest>` for each mise tool, package.json pin, and layer's tag
 # behind its latest, and exits 1 if any; prints nothing when all are current. Reads the network and
 # writes nothing.
-# Adapted from web-app-sdk (fbaba50): scripts/currency.sh, for one client app: its layers'
-# dependencies by tag too, rolldown held as typescript is, and no workflows or peers.
 #
 # mise runs at error level, as it warns on every run that a GitHub release has no assets. A layer
 # is pinned to its repository's release tag, which the registry doesn't hold, so its tag is checked

@@ -1,5 +1,3 @@
-// From go-web-sdk-template (7e5f330): template/internal/app/server.go
-
 package app
 
 import (

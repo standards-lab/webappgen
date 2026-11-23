@@ -1,4 +1,3 @@
-# From go-web-sdk-template (7e5f330): template/.github/workflows/ci.yml
 # CI: the check on every push and pull request, and the integration tier on push to main and on
 # demand.
 # See architecture/standards/go-elemental/principles/release-and-ci.md

@@ -1,5 +1,3 @@
-// Adapted from go-cli-sdk-template (a4d314c): template/cmd/app/main.go, renamed webappgen.
-
 // Command webappgen writes web client projects on the standards-lab stack.
 // Its main derives the signal context and makes one call into the
 // composition root, internal/app. That call sits in run, apart from main,

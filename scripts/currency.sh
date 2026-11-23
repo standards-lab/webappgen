@@ -3,9 +3,6 @@
 # each direct Go requirement, each module the service-app kind pins, each mise tool, and each
 # GitHub Actions pin behind its latest, and exits 1 if any; prints nothing when all are current.
 # Reads the network and writes nothing; diagnostics go to stderr.
-# Adapted from go-cli-sdk-template (a4d314c): template/scripts/currency.sh, on one module, with a
-# toolchain line reported.
-# Adapted from web-app-sdk (fbaba50): scripts/currency.sh, its report collected and printed once.
 #
 # Each scan captures its command's output in a variable before reading it, so under set -e a scan
 # command that fails (a go list missing a go.sum entry) fails currency instead of reporting

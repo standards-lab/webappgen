@@ -1,5 +1,3 @@
-// Adapted from go-cli-sdk-template (a4d314c): template/internal/app/doc.go, for webappgen's layers.
-
 // Package app is webappgen's composition root. [New] describes the
 // program's dependencies as one go-core graph and builds the command tree
 // on go-cli-sdk over it; [App.Run] runs that tree, as a go-cli-sdk

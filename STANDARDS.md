@@ -1,16 +1,14 @@
 # webappgen standards
 
-The judgement calls the standards-reviewer applies to webappgen, beyond what `mise run check`
-enforces: each one line, with a pointer to the architecture page that applies. They are the calls
-in spike-html-apps (2883d78)'s `STANDARDS.md` that apply to a CLI and the project it writes; the
-`standard` task points them at the Web Elemental standard once it is founded
-(`standards-lab/context/web-client.md`, "Toward Web Elemental").
+The judgement calls the standards-reviewer applies to webappgen and the project it writes, beyond
+what `mise run check` enforces: each one line, with a pointer to the architecture page that
+applies. webappgen is a Web Elemental member that ships a Go binary
+(`architecture/standards/web-elemental/README.md`).
 
 ## Written project
 
-- A written project depends on a layer only through its release tag, as any consumer does: never
-  a link, path alias, source condition, or project reference
-  (`architecture/principles/independent-releases.md`).
+- A written project resolves each layer and pins its packages as a Web Elemental layer does
+  (`architecture/standards/web-elemental/principles/packages-and-releases.md`).
 - The starter app sits above the layers and wires them; it imports no code a layer keeps
   internal, and a layer never knows the app (`architecture/principles/downward-dependencies.md`).
 - The starter holds only what every app of its kind needs, and each package and tool it pins is
@@ -49,11 +47,7 @@ in spike-html-apps (2883d78)'s `STANDARDS.md` that apply to a CLI and the projec
 
 ## Code
 
-- A copied file names its source repository and commit in a provenance line, which reads
-  `From|Adapted from <repo> (<commit>): <path>`, naming the immediate source alone; a JSON file,
-  which takes no comment, has its line in `context/README.md`'s Provenance
+- Every comment, the CLI's and the written project's, is one of the five kinds
   (`architecture/principles/comments.md`).
-- A starter file keeps its provenance line in the project it is written into, so a written file
-  names its source as the starter's does (`architecture/principles/comments.md`).
 - Tests are TypeScript run under Node's type stripping, erasable syntax only, type-checked by
   `tsconfig.test.json`; browser-served fixtures stay `.js`.

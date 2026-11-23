@@ -1,7 +1,5 @@
 // The app's type-check (mise run types:src): src/, vite.config.ts, and eslint.config.js.
 // See README.md
-// Adapted from spike-html-apps (2883d78): tsconfig.json, on @standards-lab/web-foundation, for one
-// client app.
 {
   "compilerOptions": {
     "target": "es2024",

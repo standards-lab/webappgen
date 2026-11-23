@@ -1,6 +1,3 @@
-// Adapted from go-cli-sdk-template (a4d314c): template/integration/cli_test.go, renamed webappgen,
-// with new's listing.
-
 //go:build integration
 
 package integration_test

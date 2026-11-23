@@ -1,7 +1,5 @@
 # The CLI's tools and tasks.
 # See README.md
-# Adapted from go-cli-sdk-template (a4d314c): template/mise.toml, on one module.
-# Adapted from web-app-sdk (fbaba50): mise.toml, its settings, preflight, install, and lint tasks.
 [settings]
 task.run_auto_install = false
 

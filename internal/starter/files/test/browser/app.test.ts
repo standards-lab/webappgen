@@ -4,7 +4,6 @@
 // reach the right view. The page is the foundation's application page, and its header and view sit
 // inside the layout sheet's gutters, off the viewport's edges. Every asset loads, under the base,
 // which the document's base URI, Vite's base, and the router's agree on.
-// Adapted from spike-html-apps (2883d78): test/browser/base.test.ts, on a static host.
 
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";

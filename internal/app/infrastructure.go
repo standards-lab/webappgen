@@ -1,5 +1,3 @@
-// Adapted from go-cli-sdk-template (a4d314c): template/internal/app/infrastructure.go, its variables WEBAPPGEN_.
-
 package app
 
 import (

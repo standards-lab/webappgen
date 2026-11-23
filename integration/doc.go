@@ -1,5 +1,3 @@
-// Adapted from go-cli-sdk-template (a4d314c): template/integration/doc.go, renamed webappgen.
-
 // Package integration is webappgen's integration tier: the harness that
 // runs the program as the built binary, one shot at a time, and, under the
 // integration build tag, the suite that asserts its behavior through the

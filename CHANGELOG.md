@@ -8,6 +8,22 @@ changelog; this one records the CLI's.
 
 ## [Unreleased]
 
+## [v0.2.1] - 2026-11-23
+
+A patch release: the projects webappgen writes, and its own sources, drop the provenance comments
+that named the workspace sources they were copied from; that lineage now lives in the workspace's
+references catalog. The written projects' pins are unchanged from v0.2.0: the layers
+web-foundation v0.4.0, web-icons v0.1.0, web-components v0.2.0, web-app-sdk v0.1.0, and
+web-tooling v0.1.0; pnpm 12.23.0; and, for service-app, go-web-sdk-template v0.16.0 and gonew from
+golang.org/x/tools v0.53.0.
+
+### Changed
+
+- Projects written by `new standalone`, `new service-app`, and `inject service-app` carry no
+  provenance comments naming workspace sources: not in the starter files, the service-app client
+  and its wiring, or the `.air.toml` a new or injected service gets.
+- webappgen's own sources carry none either.
+
 ## [v0.2.0] - 2026-11-23
 
 The service-app kind: a web client inside a Go web service copied from go-web-sdk-template, which
@@ -72,6 +88,7 @@ copied file; the spike is archived and never a dependency. The module depends on
   on amd64 and arm64, and publishes `webappgen-vX.Y.Z-<os>-<arch>.tar.gz` archives and their
   `SHA256SUMS` on the GitHub release, so `mise use github:standards-lab/webappgen` installs it.
 
-[Unreleased]: https://github.com/standards-lab/webappgen/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/standards-lab/webappgen/compare/v0.2.1...HEAD
+[v0.2.1]: https://github.com/standards-lab/webappgen/compare/v0.2.0...v0.2.1
 [v0.2.0]: https://github.com/standards-lab/webappgen/compare/v0.1.0...v0.2.0
 [v0.1.0]: https://github.com/standards-lab/webappgen/releases/tag/v0.1.0

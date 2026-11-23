@@ -6,8 +6,6 @@
 // web-foundation.preferences and follows another tab's save. Registration comes first:
 // preferences.js drops a stored name no module has registered. Its bytes delay first paint, so it
 // imports nothing more.
-// Adapted from spike-html-apps (2883d78): apps/pipeline/src/register.ts and
-// apps/pipeline/src/preferences.ts, one module on the full entry.
 
 import "@standards-lab/web-foundation/register-full.js";
 import "@standards-lab/web-foundation/preferences.js";

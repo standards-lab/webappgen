@@ -1,9 +1,6 @@
 // The lint the check runs: the recommended rules over the code, a description on every ESLint and
 // TypeScript directive, the browser's globals in src/, and node's in the config, the scripts, and
 // the tests.
-// Adapted from spike-html-apps (2883d78): eslint.config.js, for one client app, without the app
-// tier's table.
-// Adapted from web-components (6052866): eslint.config.js, its directive rules.
 
 import comments from "@eslint-community/eslint-plugin-eslint-comments";
 import js from "@eslint/js";
