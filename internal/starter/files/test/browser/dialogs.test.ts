@@ -67,7 +67,7 @@ async function open(t: { after(fn: () => Promise<void>): void }): Promise<Page> 
   return page;
 }
 
-test("each header button shows its key, and opens Help fit to its content and Settings wider", async (t) => {
+test("each header button shows its key, and opens Help fit to its content and Settings filling the cap", async (t) => {
   const page = await open(t);
   for (const dialog of DIALOGS) {
     assert.equal(
@@ -77,16 +77,23 @@ test("each header button shows its key, and opens Help fit to its content and Se
     );
     await press(page, dialog.key);
     await until(page, `document.querySelector("#${dialog.id}").open`);
-    const { width, fit }: { width: number; fit: number } = await page.evaluate(`(() => {
+    const { width, fit, cap }: { width: number; fit: number; cap: number } =
+      await page.evaluate(`(() => {
       const dialog = document.querySelector("#${dialog.id}");
       const width = dialog.getBoundingClientRect().width;
       dialog.style.inlineSize = "fit-content";
       const fit = dialog.getBoundingClientRect().width;
+      dialog.style.inlineSize = "100vw";
+      const cap = dialog.getBoundingClientRect().width;
       dialog.style.inlineSize = "";
-      return { width, fit };
+      return { width, fit, cap };
     })()`);
-    if (dialog.width === "fit") assert.equal(width, fit, `${dialog.name} fits its content`);
-    else assert.ok(width > fit, `${dialog.name}, ${width}px, is wider than its content, ${fit}px`);
+    if (dialog.width === "fit") {
+      assert.equal(width, fit, `${dialog.name} fits its content`);
+      assert.ok(width < cap, `${dialog.name}, ${width}px, is narrower than the cap, ${cap}px`);
+    } else {
+      assert.equal(width, cap, `${dialog.name}, ${width}px, fills the cap, ${cap}px`);
+    }
     await press(page, "Escape");
     await until(page, `!document.querySelector("#${dialog.id}").open`);
   }
