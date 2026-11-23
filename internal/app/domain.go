@@ -20,5 +20,5 @@ func newCommand() *cli.Command {
 	return (&cli.Command{
 		Name:    "new",
 		Summary: "Write a new web client project of one kind",
-	}).Add(standalone.Command(moduleVersion()), serviceapp.Command())
+	}).Add(standalone.Command(moduleVersion()), serviceapp.Command(moduleVersion()))
 }

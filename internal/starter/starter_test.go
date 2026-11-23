@@ -36,7 +36,7 @@ func toolPins(config string) map[string]string {
 
 func TestFiles_PinsTheCLIsTools(t *testing.T) {
 	dir := t.TempDir()
-	values := struct{ Name, Version string }{Name: "my-app", Version: "(devel)"}
+	values := struct{ Kind, Name, Version string }{Kind: "standalone", Name: "my-app", Version: "(devel)"}
 	if err := project.Write(dir, values, starter.Files); err != nil {
 		t.Fatal(err)
 	}

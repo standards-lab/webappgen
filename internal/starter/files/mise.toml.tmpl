@@ -75,6 +75,7 @@ run = "node --test 'test/unit/*.test.ts'"
 description = "Build the app with Vite (vite.config.ts) into dist/"
 depends = ["preflight"]
 run = "pnpm exec vite build"
+{{- if eq .Kind "standalone"}}
 
 [tasks.dev]
 description = "Serve the app from its source with Vite's dev server, reloading on each change; reads the network only as a local server"
@@ -85,6 +86,7 @@ run = "pnpm exec vite"
 description = "Build the app, then serve dist/ with vite preview, as a static host would; reads the network only as a local server"
 depends = ["build"]
 run = "pnpm exec vite preview"
+{{- end}}
 
 [tasks.size]
 description = "Print the build's raw, gzip, and brotli totals, a report with no budget"

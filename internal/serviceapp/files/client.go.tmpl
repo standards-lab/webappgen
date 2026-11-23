@@ -1,0 +1,40 @@
+// Adapted from spike-html-apps (2883d78): apps/pipeline/pipeline.go, with no placeholder in dist/.
+
+// Package {{.Package}} embeds the web client's Vite build, dist/, for the
+// service to serve with go-web-sdk's web.NewClient: [Dist] is the build,
+// [Entry] the manifest key of the client's entry, and [RenderBlocking] the
+// keys of the modules the shell loads render-blocking ahead of it.
+//
+// mise run build writes the build; it is never committed. The package
+// compiles only once it is built: with no dist/, the embed pattern matches
+// nothing, and go build fails naming it.
+package {{.Package}}
+
+import (
+	"embed"
+	"io/fs"
+)
+
+// Entry is the manifest key of the client's entry module, one of Vite's
+// inputs.
+const Entry = "src/main.ts"
+
+// RenderBlocking lists the manifest keys of the modules the shell loads
+// with blocking="render" ahead of [Entry], each another of Vite's inputs,
+// in the order they must run: the theme module, which applies the reader's
+// stored theme choice to the root element, then the page module, which
+// draws the application page into the shell's empty <body>.
+var RenderBlocking = []string{"src/theme.ts", "src/page.ts"}
+
+//go:embed all:dist
+var dist embed.FS
+
+// Dist returns the build's output directory, the root web.NewClient reads
+// .vite/manifest.json and the assets from.
+func Dist() fs.FS {
+	sub, err := fs.Sub(dist, "dist")
+	if err != nil {
+		panic(err)
+	}
+	return sub
+}

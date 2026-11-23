@@ -1,0 +1,89 @@
+// The page module, which the shell loads with blocking="render" after the theme module (theme.ts)
+// and ahead of the app's entry (main.ts), so the page is drawn before the browser first paints: it
+// writes the foundation's application page into the shell's empty <body>, its header with the
+// title and the Help and Settings buttons, <main>, where the router mounts each view, and the Help
+// and Settings dialogs. The glyphs are web-icons' modules, each its icon's <svg> markup, since the
+// service renders the page and no build fills a marker. Its markup is the standalone kind's page
+// body, glyphs filled, and webappgen's unit tier holds the two equal.
+// Adapted from webappgen (1dfc795): internal/standalone/files/index.html.tmpl, its <body>.
+
+import gear from "@standards-lab/web-icons/octicon/gear-16";
+import question from "@standards-lab/web-icons/octicon/question-16";
+import x from "@standards-lab/web-icons/octicon/x-16";
+
+const title = {{json (html .Title)}};
+
+document.body.className = "page-app";
+document.body.innerHTML = `
+  <header>
+    <h1>${title}</h1>
+    <div class="header-actions">
+      <button
+        type="button"
+        class="glyph-button"
+        commandfor="help"
+        command="show-modal"
+        aria-label="Help"
+        aria-description=""
+        data-keys="?"
+        interestfor="help-hint"
+      >
+        ${question}
+        <span aria-hidden="true"><kbd>?</kbd></span>
+      </button>
+      <div id="help-hint" class="glyph-hint" popover="hint" aria-hidden="true">Help</div>
+      <button
+        type="button"
+        class="glyph-button"
+        commandfor="settings"
+        command="show-modal"
+        aria-label="Settings"
+        aria-description=""
+        data-keys="s"
+        interestfor="settings-hint"
+      >
+        ${gear}
+        <span aria-hidden="true"><kbd>S</kbd></span>
+      </button>
+      <div id="settings-hint" class="glyph-hint" popover="hint" aria-hidden="true">Settings</div>
+    </div>
+  </header>
+  <main></main>
+  <dialog id="help" class="dialog-fit" aria-labelledby="help-title">
+    <header class="dialog-header">
+      <h2 id="help-title" tabindex="-1" autofocus>Keyboard shortcuts</h2>
+      <button
+        type="button"
+        class="glyph-button"
+        commandfor="help"
+        command="close"
+        aria-label="Close"
+        aria-description=""
+        interestfor="help-close-hint"
+      >
+        ${x}
+        <span aria-hidden="true"><kbd>Esc</kbd></span>
+      </button>
+      <div id="help-close-hint" class="glyph-hint" popover="hint" aria-hidden="true">Close</div>
+    </header>
+    <sl-shortcuts></sl-shortcuts>
+  </dialog>
+  <dialog id="settings" class="dialog-wide" aria-labelledby="settings-title">
+    <header class="dialog-header">
+      <h2 id="settings-title">Settings</h2>
+      <button
+        type="button"
+        class="glyph-button"
+        commandfor="settings"
+        command="close"
+        aria-label="Close"
+        aria-description=""
+        interestfor="settings-close-hint"
+      >
+        ${x}
+        <span aria-hidden="true"><kbd>Esc</kbd></span>
+      </button>
+      <div id="settings-close-hint" class="glyph-hint" popover="hint" aria-hidden="true">Close</div>
+    </header>
+    <sl-settings></sl-settings>
+  </dialog>`;

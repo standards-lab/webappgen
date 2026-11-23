@@ -34,14 +34,18 @@ func CheckDir(dir string) error {
 }
 
 // WriteNextSteps writes to w the steps left to run after a project is
-// written into dir: a cd into dir, quoted so it pastes into a POSIX shell
-// as written, then each of steps, one to a line.
+// written into dir: a cd into dir, quoted as [ShellQuote] quotes it, then
+// each of steps, one to a line.
 func WriteNextSteps(w io.Writer, dir string, steps ...string) error {
-	_, err := fmt.Fprintf(w, "Next steps:\n  cd %s\n  %s\n", shellQuote(dir), strings.Join(steps, "\n  "))
+	_, err := fmt.Fprintf(w, "Next steps:\n  cd %s\n  %s\n", ShellQuote(dir), strings.Join(steps, "\n  "))
 	return err
 }
 
-func shellQuote(s string) string {
+// ShellQuote returns s quoted so it pastes into a POSIX shell as one word,
+// as written: s itself when it is non-empty and holds only letters, digits,
+// and /._-+:@,=, and otherwise s in single quotes, each of its own single
+// quotes written as a backslash-escaped quote between two quoted runs.
+func ShellQuote(s string) string {
 	plain := func(r rune) bool {
 		return 'a' <= r && r <= 'z' || 'A' <= r && r <= 'Z' || '0' <= r && r <= '9' || strings.ContainsRune("/._-+:@,=", r)
 	}

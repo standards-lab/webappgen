@@ -2,7 +2,10 @@ package serviceapp
 
 import (
 	"context"
+	"embed"
 	"fmt"
+	"go/token"
+	"io/fs"
 	"os/exec"
 	"path"
 	"path/filepath"
@@ -12,6 +15,7 @@ import (
 
 	"github.com/standards-lab/webappgen/internal/project"
 	"github.com/standards-lab/webappgen/internal/standalone"
+	"github.com/standards-lab/webappgen/internal/starter"
 )
 
 const (
@@ -22,6 +26,52 @@ const (
 	// template, at the version run, as module@version.
 	ToolsPin = "golang.org/x/tools@v0.53.0"
 )
+
+//go:embed all:files
+var files embed.FS
+
+// Files is the service-app kind's client tree, rooted at its own top, which
+// [Command] lays over [starter.Files] into the service's client directory:
+// the Vite config, which builds the entry, theme, and page modules with a
+// manifest at base ./ and no public directory; the page module, which
+// draws the application page into the shell's empty <body>; the Go
+// package that embeds the build; and the browser tier's support and cases
+// that serve the build behind the shell go-web-sdk's NewClient renders.
+// Its templates read [Values].
+var Files fs.FS = mustSub(files, "files")
+
+func mustSub(fsys fs.FS, dir string) fs.FS {
+	sub, err := fs.Sub(fsys, dir)
+	if err != nil {
+		panic(err)
+	}
+	return sub
+}
+
+// Values are what the client's templates, the starter's and the kind's
+// own, are rendered with.
+type Values struct {
+	// Name is the client's package name.
+	Name string
+	// Title is the page's title, which the page module draws in its header.
+	Title string
+	// Base is the absolute path the client is served under, as
+	// [standalone.ParseBase] returns it.
+	Base string
+	// APIBase is the URL of the API the client calls, which the service
+	// writes into the page's #app-config.
+	APIBase string
+	// Package is the name of the client's Go package, [PackageName] of the
+	// client directory.
+	Package string
+	// Version is the webappgen version that wrote the client, named in its
+	// mise.toml.
+	Version string
+}
+
+// Kind is the kind's name, service-app, which the starter's templates
+// read to write what this kind alone needs.
+func (Values) Kind() string { return "service-app" }
 
 type options struct {
 	module    string
@@ -44,14 +94,19 @@ type options struct {
 //
 // A valid run copies the template at [TemplatePin] into dir as module,
 // running gonew at [ToolsPin] through go run, its progress on stderr. It
-// then prints the next steps, a cd into dir, git init, mise install, and
-// mise run check, and exits 0. A go missing from PATH, or a gonew that
-// fails, exits nonzero naming it.
-func Command() *cli.Command {
+// then writes the client into the --client-dir in dir, never prompting:
+// the starter, then [Files] over it, rendered with the flags' [Values] and
+// version, the webappgen version writing it. It then prints the next
+// steps, a cd into dir, git init, mise install, the client's mise install,
+// mise run install, and mise run build, run in its directory with mise -C,
+// and the service's mise run check, and exits 0. A go missing from PATH, a
+// gonew that fails, or a client directory the copied template already
+// holds files in exits nonzero naming it.
+func Command(version string) *cli.Command {
 	var o options
 	cmd := &cli.Command{
 		Name:     "service-app",
-		Summary:  "Write a Go web service, copied from go-web-sdk-template as module, into dir",
+		Summary:  "Write a Go web service, copied from go-web-sdk-template as module, with a web client in it, into dir",
 		Synopsis: "<module> <dir>",
 		Args:     moduleDirArgs,
 		Validate: func(inv *cli.Invocation) error {
@@ -61,7 +116,20 @@ func Command() *cli.Command {
 			if err := copyTemplate(ctx, o.module, o.dir, inv); err != nil {
 				return err
 			}
-			return project.WriteNextSteps(inv.Stdout, o.dir, "git init", "mise install", "mise run check")
+			client := filepath.Join(o.dir, filepath.FromSlash(o.clientDir))
+			if err := project.CheckDir(client); err != nil {
+				return fmt.Errorf("--client-dir %q: the copied template holds it: %w", o.clientDir, err)
+			}
+			values := Values{
+				Name: o.name, Title: o.title, Base: o.base, APIBase: o.apiBase,
+				Package: PackageName(o.clientDir), Version: version,
+			}
+			if err := project.Write(client, values, starter.Files, Files); err != nil {
+				return err
+			}
+			mise := "mise -C " + project.ShellQuote(o.clientDir)
+			return project.WriteNextSteps(inv.Stdout, o.dir, "git init", "mise install",
+				mise+" install", mise+" run install", mise+" run build", "mise run check")
 		},
 	}
 	flags := cmd.Flags()
@@ -164,6 +232,27 @@ func ParseClientDir(dir string) (string, error) {
 		return "", fmt.Errorf("--client-dir %q isn't clean: give %s", dir, clean)
 	}
 	return dir, nil
+}
+
+// PackageName returns the name of the client's Go package in clientDir, a
+// directory [ParseClientDir] accepts: its last element, lowercased, with
+// every rune but ASCII letters, digits, and underscores dropped, or
+// "client" when that leaves no name, the blank identifier, a Go keyword,
+// or a name that begins with a digit.
+func PackageName(clientDir string) string {
+	name := strings.Map(func(r rune) rune {
+		switch {
+		case 'a' <= r && r <= 'z' || '0' <= r && r <= '9' || r == '_':
+			return r
+		case 'A' <= r && r <= 'Z':
+			return r + 'a' - 'A'
+		}
+		return -1
+	}, path.Base(clientDir))
+	if name == "" || name == "_" || token.IsKeyword(name) || '0' <= name[0] && name[0] <= '9' {
+		return "client"
+	}
+	return name
 }
 
 func copyTemplate(ctx context.Context, module, dir string, inv *cli.Invocation) error {

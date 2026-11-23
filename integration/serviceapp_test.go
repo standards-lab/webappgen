@@ -6,6 +6,7 @@ import (
 	"context"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -156,19 +157,115 @@ func goOffline(t *testing.T) []string {
 	return []string{"GOPROXY=file://" + filepath.ToSlash(cache)}
 }
 
-func TestNewServiceApp_WritesThenTests(t *testing.T) {
+var writtenClient = []string{
+	".gitignore",
+	".prettierignore",
+	".prettierrc.json",
+	"README.md",
+	"client.go",
+	"eslint.config.js",
+	"mise.toml",
+	"package.json",
+	"pnpm-lock.yaml",
+	"pnpm-workspace.yaml",
+	"scripts",
+	"scripts/currency.sh",
+	"scripts/preflight.sh",
+	"scripts/size.ts",
+	"src",
+	"src/config.ts",
+	"src/main.ts",
+	"src/page.ts",
+	"src/theme.ts",
+	"src/views",
+	"src/views/home.ts",
+	"src/views/not-found.ts",
+	"test",
+	"test/browser",
+	"test/browser/app.test.ts",
+	"test/browser/dialogs.test.ts",
+	"test/browser/glyphs.test.ts",
+	"test/browser/support",
+	"test/browser/support/app.ts",
+	"test/browser/support/build.ts",
+	"test/browser/theme.test.ts",
+	"test/unit",
+	"test/unit/config.test.ts",
+	"test/unit/size.test.ts",
+	"tsconfig.json",
+	"tsconfig.test.json",
+	"vite.config.ts",
+}
+
+func TestNewServiceApp_WritesTheClient(t *testing.T) {
+	dir := filepath.Join(t.TempDir(), "my-service")
+
+	res := integration.RunEnv(t, goOffline(t), "new", "service-app", "example.com/demo", dir,
+		"--client-dir", "web/My-UI", "--name", "console", "--title", `Ops & "Console"`,
+		"--api-base", "https://api.example.com/v1/")
+
+	if res.Code != process.ExitOK {
+		t.Fatalf("code = %d, want %d; stderr = %q", res.Code, process.ExitOK, res.Stderr)
+	}
+	want := "Next steps:\n  cd " + dir + "\n  git init\n  mise install\n" +
+		"  mise -C web/My-UI install\n  mise -C web/My-UI run install\n  mise -C web/My-UI run build\n" +
+		"  mise run check\n"
+	if res.Stdout != want {
+		t.Errorf("stdout = %q, want %q", res.Stdout, want)
+	}
+	client := filepath.Join(dir, "web", "My-UI")
+	if got := integration.Tree(t, client); !slices.Equal(got, writtenClient) {
+		t.Errorf("client tree = %q, want %q", got, writtenClient)
+	}
+	for name, wants := range map[string][]string{
+		"package.json": {`"name": "console",`},
+		"client.go":    {"\npackage myui\n", `const Entry = "src/main.ts"`, `var RenderBlocking = []string{"src/theme.ts", "src/page.ts"}`, "//go:embed all:dist\n"},
+		"src/page.ts":  {`const title = "Ops &amp; &#34;Console&#34;";`},
+		"vite.config.ts": {`base: "./",`, "publicDir: false,", "manifest: true,",
+			`input: { main: "src/main.ts", theme: "src/theme.ts", page: "src/page.ts" },`},
+		"README.md":  {"# console\n", "`https://api.example.com/v1/`", "`mise run serve`"},
+		".gitignore": {"\ndist/\n"},
+	} {
+		content := read(t, client, name)
+		for _, want := range wants {
+			if !strings.Contains(content, want) {
+				t.Errorf("%s = %q, want it to hold %q", name, content, want)
+			}
+		}
+	}
+	config := read(t, client, "mise.toml")
+	for _, task := range []string{"[tasks.dev]", "[tasks.preview]"} {
+		if strings.Contains(config, task) {
+			t.Errorf("mise.toml holds %s, want no dev server or preview task", task)
+		}
+	}
+	for _, name := range writtenClient {
+		if path.Ext(name) == "" {
+			continue
+		}
+		content := strings.ReplaceAll(read(t, client, name), "{{ version }}", "")
+		if strings.Contains(content, "{{") {
+			t.Errorf("%s holds an unrendered {{", name)
+		}
+	}
+}
+
+func TestNewServiceApp_WritesThenChecks(t *testing.T) {
 	dir := filepath.Join(t.TempDir(), "my-service")
 	if err := os.Mkdir(dir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	env := goOffline(t)
+	env := append(goOffline(t), offline(t)...)
 
 	res := integration.RunEnv(t, env, "new", "service-app", "example.com/demo", dir)
 
 	if res.Code != process.ExitOK {
 		t.Fatalf("code = %d, want %d; stderr = %q", res.Code, process.ExitOK, res.Stderr)
 	}
-	if want := "Next steps:\n  cd " + dir + "\n  git init\n  mise install\n  mise run check\n"; res.Stdout != want {
+	want := "Next steps:\n  cd " + dir + "\n  git init\n  mise install\n" +
+		"  mise -C client install\n  mise -C client run install\n  mise -C client run build\n" +
+		"  mise run check\n"
+	if res.Stdout != want {
 		t.Errorf("stdout = %q, want %q", res.Stdout, want)
 	}
 	if want := "gonew: initialized example.com/demo in " + dir + "\n"; !strings.HasSuffix(res.Stderr, want) {
@@ -180,6 +277,19 @@ func TestNewServiceApp_WritesThenTests(t *testing.T) {
 
 	ctx, cancel := context.WithTimeout(t.Context(), checkTimeout)
 	defer cancel()
+	client := filepath.Join(dir, "client")
+	for _, args := range [][]string{{"run", "install"}, {"run", "check"}} {
+		cmd := exec.CommandContext(ctx, "mise", args...)
+		cmd.Dir, cmd.Env = client, append(os.Environ(), env...)
+		out, err := cmd.CombinedOutput()
+		if err != nil {
+			t.Fatalf("mise %s in the written client: %v\n%s", strings.Join(args, " "), err, out)
+		}
+		t.Logf("$ mise %s\n%s", strings.Join(args, " "), out)
+	}
+	if _, err := os.Stat(filepath.Join(client, "dist", ".vite", "manifest.json")); err != nil {
+		t.Fatalf("the client's check built no manifest: %v", err)
+	}
 	for _, args := range [][]string{{"vet", "./..."}, {"test", "-count=1", "./..."}} {
 		cmd := exec.CommandContext(ctx, "go", args...)
 		cmd.Dir, cmd.Env = dir, append(os.Environ(), env...)

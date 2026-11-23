@@ -50,6 +50,10 @@ type Values struct {
 	Version string
 }
 
+// Kind is the kind's name, standalone, which the starter's templates read
+// to write what this kind alone needs.
+func (Values) Kind() string { return "standalone" }
+
 type options struct {
 	dir     string
 	name    string
