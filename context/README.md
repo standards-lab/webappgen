@@ -23,59 +23,18 @@ project's tasks, deployment, and the contributor workflow.
   `mise run install` in the project.
 - **Embedded kinds** (planned): `new new-service` and `new existing-service` write a client
   inside a new or an existing Go web service, served by go-web-sdk's `NewClient` (v0.2.0).
-- **The written project** (built): [`internal/starter/files`](../internal/starter/files/), what
-  `new standalone` writes.
-  - It takes each layer by an exact `github:` release tag, with a committed lockfile.
-  - It pins chrome-headless-shell for linux-x64, linux-arm64, mac-x64, and mac-arm64.
-  - Its check runs lint, types, the unit tier, the build, and a size report with no budget, then
-    the browser tier on web-tooling.
-  - Its `currency` task holds typescript to typescript-eslint's range and rolldown to vite's.
-  - It takes web-foundation's full entry, `page-full.css` and `register-full.js`, so Settings
-    offers every built-in profile, and applies the stored theme before first paint, from a
-    render-blocking Vite input.
-  - Its page is the foundation's application page, `body.page-app`, laid out by `layout.css`
-    alone. The header's `.header-actions` holds the Help and Settings glyph buttons, bound to ?
-    and S through the foundation's `keys.js`; Help opens a `.dialog-fit` dialog holding
-    web-components' `sl-shortcuts`, and Settings a `.dialog-wide` dialog holding `sl-settings`,
-    which applies and stores a choice at once. web-icons' `iconFill()` draws question-16,
-    gear-16, and x-16.
-  - Its `README.md` documents its tasks, its config, deploying it, and how it is built.
-  - Its `dev` and `preview` tasks serve the source and the build at Vite's defaults; no check
-    runs them.
-  - Its router mounts a home view, which uses no component, and a not-found view.
-  - Its config reader prefers the page's `#app-config` element and otherwise fetches
-    `config.json`.
+- **The written project** (built): [`internal/starter/files`](../internal/starter/files/), the
+  starter every kind writes before its own files, on the layers by exact tag with a committed
+  lockfile. With the standalone kind's files it is the foundation's application page with Help
+  and Settings, a home and a not-found view, a config reader, and a check with unit and browser
+  tiers. Its [`README.md`](../internal/starter/files/README.md.tmpl) documents its tasks and how
+  it is built.
 - **The full proof** (built): [`integration`](../integration/): the root `mise run install`
   warms `.cache/pnpm-store`, and the integration tier writes a project with `--install` offline
   and runs the written project's check.
 - **Release** (built): [`release.yml`](../.github/workflows/release.yml): a tag on main
   triggers the workflow, which runs `scripts/pack.sh` to build four archives and `SHA256SUMS`,
   attaches them to a draft release, then publishes it.
-
-## Facts the code relies on
-
-- `src/theme.ts` is its own Vite input because Vite folds every module script `index.html`
-  names into one injected entry and drops `blocking="render"`; a plugin in `vite.config.ts`
-  writes the theme chunk's script tag ahead of the entry.
-- `strictExecutionOrder` is on because the registry and the preferences module land in a chunk
-  the Settings dialog shares; without it, that chunk applies the stored theme before the theme chunk
-  registers the profiles the theme names.
-- `src/theme.ts` imports `register-full.js` ahead of `preferences.js`: `preferences.js` drops a
-  stored name no module has registered, so a stored non-default profile needs the full
-  registration first, and the browser tier's first-paint case stores one.
-- The dev server excludes the foundation and the components from Vite's pre-bundling: the CSS
-  module plugin never sees a pre-bundled module's imports, and pre-bundling splits the
-  foundation's registry in two. The plugin's `include` also admits Vite's `?v=` query on dev
-  module ids.
-- The root `mise.toml`'s tools and the starter's `mise.toml.tmpl` move together: a unit test in
-  `internal/starter` holds every starter pin equal to the root's, so a chrome-headless-shell bump
-  changes both files' version, checksums, and sizes.
-- The embedded trees under `internal/*/files` must hold only git-tracked files. `go:embed all:`
-  takes whatever the working copy holds, such as `node_modules` or `dist` from a demo run, and
-  each kind's `TestFiles_Tracked` fails on it.
-- `scripts/pack.sh` builds and version-checks all four binaries before it writes any archive.
-  An archive written first into an output directory inside the checkout is an untracked file,
-  and `go build` stamps the next binary `+dirty`.
 
 ## Provenance
 

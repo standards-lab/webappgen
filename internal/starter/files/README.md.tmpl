@@ -15,8 +15,8 @@ mise run build     # build the app into dist/
 mise run currency  # report every tool, package, and layer pin behind its latest; reads the network
 ```
 
-`mise run install` is the one task that reads the network: no other task installs a missing tool,
-and each names `mise run install` when one is missing. `dev` and `preview` serve at Vite's default
+Only `install` and `currency` read the network. No other task installs a missing tool; each names
+`mise run install` when one is missing. `dev` and `preview` serve at Vite's default
 host and port; no check runs them. `size` is a report, with no budget.
 
 ## Config
@@ -37,10 +37,10 @@ it once, at start. A page that carries an `#app-config` element, a
 
 ## How it's built
 
-- `index.html` is the foundation's application page. Its header's buttons open the Help and
-  Settings dialogs by the invoker command, their `data-keys` bind ? and S through the
-  foundation's `keys.js`, and web-icons' `iconFill()` fills each `data-icon` marker with its
-  icon's markup, in the dev server and the build alike. The router mounts each view in `<main>`.
+- `index.html` is the foundation's application page. Its header's buttons open the Help and Settings
+  dialogs through invoker commands (`commandfor` and `command`), their `data-keys` bind ? and S
+  through the foundation's `keys.js`, and web-icons' `iconFill()` fills each `data-icon` marker with
+  its icon's markup, in the dev server and the build alike. The router mounts each view in `<main>`.
 - `src/theme.ts` is a Vite input of its own: Vite folds every module script `index.html` names
   into one entry without `blocking="render"`, so a plugin in `vite.config.ts` puts the theme chunk
   on the page, render-blocking, ahead of the entry. `rolldownOptions.output.strictExecutionOrder`
@@ -57,11 +57,11 @@ it once, at start. A page that carries an `#app-config` element, a
 - The build targets es2024 for `src/main.ts`'s top-level await, which every browser the router
   needs supports.
 - `mise run currency` holds typescript to typescript-eslint's peer range and rolldown to vite's
-  dependency range, so the build runs the rolldown vite tests.
+  dependency range, so the build runs on the rolldown that vite is tested with.
 - `pnpm-workspace.yaml`'s `minimumReleaseAge: 0` turns off pnpm's day-long wait on a new release,
   so a frozen install of a lockfile pinning a release under a day old doesn't fail. The layers,
   `github:` dependencies at the top level, need no setting: pnpm guards only a git dependency
-  below it.
+  below the top level.
 - `tsconfig.json` names the foundation's ambient `*.css` declaration, so the app's stylesheet
   imports resolve, and skips library checks, as the ESLint plugins' declarations name types they
   don't install.
@@ -69,5 +69,6 @@ it once, at start. A page that carries an `#app-config` element, a
   Markdown, the YAML, and `pnpm-lock.yaml`.
 - The lint requires a description on every ESLint and TypeScript directive.
 - Chrome for Testing publishes no checksums: a chrome-headless-shell bump takes each platform's
-  sha256 and size from its download by hand. mise caches downloads by checksum, so the browser
-  tier refuses a binary whose version isn't the pin.
+  sha256 and size from its download by hand. mise caches downloads by checksum, so a bump that
+  keeps the old sha256 installs the old build; the browser tier refuses a binary whose version
+  isn't the pin.

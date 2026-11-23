@@ -4,6 +4,7 @@ The web client CLI of the standards-lab web client stack. `webappgen new <kind>`
 project for one kind of app, from files embedded in its binary, so one version names both the CLI
 and every file it writes. The written project depends on the stack's layers,
 [web-foundation](https://github.com/standards-lab/web-foundation),
+[web-icons](https://github.com/standards-lab/web-icons),
 [web-components](https://github.com/standards-lab/web-components),
 [web-app-sdk](https://github.com/standards-lab/web-app-sdk), and
 [web-tooling](https://github.com/standards-lab/web-tooling), each by its exact release tag, and
@@ -72,8 +73,8 @@ header holds two buttons, drawn with web-icons' glyphs:
   or sans) (web-components' `sl-settings`). A choice applies and is stored at once, and the stored
   choice applies before first paint on every later visit.
 
-Each dialog closes on its Close button or Escape. The keys are ignored inside text fields. The
-written project's own `README.md` documents its tasks, its config, deploying it, and how it is
+Each dialog closes on its Close button or Escape. The page ignores ? and S inside a text field.
+The written project's own `README.md` documents its tasks, its config, deploying it, and how it is
 built.
 
 ## Deploy a standalone build
@@ -107,14 +108,14 @@ mise run check     # vet, lint, and the unit and integration tiers; reads no net
 mise run currency  # every Go requirement, tool, and action pin behind its latest; reads the network
 ```
 
-`mise run install` is the one task that reads the network; no other task installs a missing tool,
-and each names `mise run install` when one is missing. It warms `.cache/pnpm-store` with the
-starter's packages, so the integration tier's full proof writes a project with `--install` and
-runs the project's own check offline. The module is built alone, with `GOWORK=off`, never in a
-workspace a parent directory holds. Tests are black-box, in each package's `_test` package:
-golangci-lint's testpackage allows only an `export_test.go`, and only to export a clock or probe
-hook the API can't reach deterministically. nolintlint requires every `//nolint` to name its
-linter and give its reason.
+Only `mise run install` and `mise run currency` read the network. No other task installs a missing
+tool; each names `mise run install` when one is missing. `mise run install` warms
+`.cache/pnpm-store` with the starter's packages, so the integration tier's full proof writes a
+project with `--install` and runs the project's own check offline. The module is built alone, with
+`GOWORK=off`, never in a workspace a parent directory holds. Tests are black-box, in each package's
+`_test` package: golangci-lint's testpackage allows only an `export_test.go`, and only to export a
+clock or probe hook the API can't reach deterministically. nolintlint requires every `//nolint` to
+name its linter and give its reason.
 
 The root `mise.toml` pins every tool the starter's `internal/starter/files/mise.toml.tmpl` pins,
 each entry as the starter writes it, and a unit test holds the two equal. Bump a shared tool in

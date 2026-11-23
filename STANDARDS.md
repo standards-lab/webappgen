@@ -1,9 +1,9 @@
 # webappgen standards
 
 The judgement calls the standards-reviewer applies to webappgen, beyond what `mise run check`
-enforces: each one line, with a pointer to the architecture page that applies. They come from
-spike-html-apps (2883d78)'s `STANDARDS.md`, those that apply to a CLI and the project it writes;
-the `standard` task points them at the Web Elemental standard once it is founded
+enforces: each one line, with a pointer to the architecture page that applies. They are the calls
+in spike-html-apps (2883d78)'s `STANDARDS.md` that apply to a CLI and the project it writes; the
+`standard` task points them at the Web Elemental standard once it is founded
 (`standards-lab/context/web-client.md`, "Toward Web Elemental").
 
 ## Written project
@@ -16,7 +16,7 @@ the `standard` task points them at the Web Elemental standard once it is founded
 - The starter holds only what every app of its kind needs, and each package and tool it pins is
   deliberate (`architecture/principles/minimal-footprint.md`).
 - Every tool, package, layer tag, and action pin, the CLI's and the written project's, is
-  explicit and at its latest, but for a hold recorded beside its pin
+  explicit and at its latest, except a hold recorded beside its pin
   (`architecture/principles/rolling-currency.md`).
 - The app reads its config and checks it before a view sees it, failing with the element or file
   it names (`architecture/principles/validation-first.md`).
