@@ -48,12 +48,12 @@ it once, at start. A page that carries an `#app-config` element, a
   dialog shares applies the stored theme before the theme chunk registers the profiles it names.
 - The components adopt their sheets through CSS module scripts,
   `import sheet from "./x.css" with { type: "css" }`, which Vite doesn't support:
-  vite-plugin-standard-css-modules rewrites each such import in the layers' modules to a
-  constructed `CSSStyleSheet`, and a plain `import "./x.css"` stays CSS Vite bundles. The plugin
-  parses with `rolldown/utils`, which it doesn't declare, so `package.json` declares rolldown at
-  the version Vite resolves. The dev server never pre-bundles the foundation or the components:
-  the plugin would miss a pre-bundled module's imports, and pre-bundling would split the
-  foundation's registry.
+  vite-plugin-standard-css-modules rewrites each such import in the layers' modules, the dev
+  server's `?v=` URLs of them included, to a constructed `CSSStyleSheet`, and a plain
+  `import "./x.css"` stays CSS Vite bundles. The plugin parses with `rolldown/utils`, which it
+  doesn't declare, so `package.json` declares rolldown at the version Vite resolves. The dev
+  server never pre-bundles the foundation or the components: the plugin would miss a pre-bundled
+  module's imports, and pre-bundling would split the foundation's registry.
 - The build targets es2024 for `src/main.ts`'s top-level await, which every browser the router
   needs supports.
 - `mise run currency` holds typescript to typescript-eslint's peer range and rolldown to vite's
