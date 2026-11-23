@@ -1,8 +1,8 @@
 # webappgen standards
 
-The judgement calls the standards-reviewer applies to webappgen, beyond what `mise run check`
-enforces: each one line, with a pointer to the architecture page that applies, for a CLI and the
-project it writes. webappgen is a Web Elemental member that ships a Go binary
+The judgement calls the standards-reviewer applies to webappgen and the project it writes, beyond
+what `mise run check` enforces: each one line, with a pointer to the architecture page that
+applies. webappgen is a Web Elemental member that ships a Go binary
 (`architecture/standards/web-elemental/README.md`).
 
 ## Written project

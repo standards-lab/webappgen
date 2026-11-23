@@ -19,7 +19,8 @@ project's tasks, deployment, and the contributor workflow.
 - **Standalone kind** (built): [`internal/standalone`](../internal/standalone/): `new standalone
   <dir>` writes the starter, then the standalone kind's own files over it (`index.html`,
   `vite.config.ts`, `public/config.json`). `--install` then runs `mise install` and
-  `mise run install` in the project.
+  `mise run install` in the project. Its goldens, in `testdata/`, are the starter's `README.md`
+  and `mise.toml` templates as the kind writes them for `my-app`, byte for byte.
 - **Service-app kind** (built): [`internal/serviceapp`](../internal/serviceapp/): `new
   service-app <module> <dir>` copies go-web-sdk-template with gonew, and `inject service-app
   <service-dir>` takes an existing copy; each writes the client, its Go package,
@@ -42,5 +43,5 @@ project's tasks, deployment, and the contributor workflow.
 
 ## Provenance
 
-The sources webappgen was built from are in the workspace's
+webappgen's lineage is in the workspace's
 [references catalog](https://github.com/standards-lab/org/blob/main/references.md).
