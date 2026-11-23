@@ -41,6 +41,7 @@ provenance line.
 ### Changed
 
 - The CLI's marathon pin, 0.24.0.
+- The pnpm pin, the CLI's and the written project's, 12.23.0.
 
 ## [v0.1.0] - 2026-11-23
 
