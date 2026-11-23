@@ -1,0 +1,62 @@
+// The app's build (mise run build) and its dev server, under the base index.html's <base href>
+// names.
+// See README.md
+// Adapted from spike-html-apps (2883d78): test/consumers/app/vite.config.ts, at an absolute base,
+// and vite.config.ts, its render-blocking input.
+
+import { iconFill } from "@standards-lab/web-icons/vite";
+import { defineConfig } from "vite";
+import type { Plugin } from "vite";
+import { standardCssModules } from "vite-plugin-standard-css-modules";
+
+const themeModule = "src/theme.ts";
+
+function renderBlockingTheme(): Plugin {
+  let base = "/";
+  return {
+    name: "render-blocking-theme",
+    configResolved(config) {
+      base = config.base;
+    },
+    transformIndexHtml: {
+      order: "post",
+      handler(_html, { bundle }) {
+        let src = base + themeModule;
+        if (bundle) {
+          const chunk = Object.values(bundle).find(
+            (output) => output.type === "chunk" && output.isEntry && output.name === "theme",
+          );
+          if (!chunk)
+            throw new Error(`render-blocking-theme: the build has no ${themeModule} chunk`);
+          src = base + chunk.fileName;
+        }
+        const attrs = { type: "module", blocking: "render", src };
+        return [{ tag: "script", attrs, injectTo: "head-prepend" }];
+      },
+    },
+  };
+}
+
+export default defineConfig({
+  base: {{json .Base}},
+  plugins: [
+    standardCssModules({
+      include: [
+        "**/node_modules/@standards-lab/**/*.js",
+        "**/node_modules/@standards-lab/**/*.js?v=*",
+      ],
+      outputMode: "CSSStyleSheet",
+    }),
+    iconFill(),
+    renderBlockingTheme(),
+  ],
+  optimizeDeps: { exclude: ["@standards-lab/web-foundation", "@standards-lab/web-components"] },
+  build: {
+    outDir: "dist",
+    target: "es2024",
+    rolldownOptions: {
+      input: { index: "index.html", theme: themeModule },
+      output: { strictExecutionOrder: true },
+    },
+  },
+});

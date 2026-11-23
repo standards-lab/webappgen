@@ -1,0 +1,22 @@
+// The app's type-check (mise run types:src): src/, vite.config.ts, and eslint.config.js.
+// See README.md
+// Adapted from spike-html-apps (2883d78): tsconfig.json, on @standards-lab/web-foundation, for one
+// client app.
+{
+  "compilerOptions": {
+    "target": "es2024",
+    "lib": ["es2024", "dom", "dom.iterable"],
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "types": ["@standards-lab/web-foundation/css"],
+    "strict": true,
+    "erasableSyntaxOnly": true,
+    "verbatimModuleSyntax": true,
+    "allowImportingTsExtensions": true,
+    "allowJs": true,
+    "checkJs": true,
+    "noEmit": true,
+    "skipLibCheck": true
+  },
+  "include": ["eslint.config.js", "vite.config.ts", "src"]
+}

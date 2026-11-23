@@ -1,0 +1,11 @@
+# Adapted from spike-html-apps (2883d78): .gitignore, for one client app.
+node_modules
+dist/
+
+mise.local.toml
+
+*.swp
+*~
+.vscode/
+.idea/
+.DS_Store

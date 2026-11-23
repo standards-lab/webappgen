@@ -1,0 +1,74 @@
+# {{.Name}}
+
+A web client on the standards-lab stack, written by webappgen. It takes each layer by its exact
+release tag and pins its toolchain with [mise](https://mise.jdx.dev).
+
+## Tasks
+
+```sh
+mise install       # the pinned tools; reads the network
+mise run install   # the pins and node_modules, from pnpm-lock.yaml; reads the network
+mise run check     # lint, types, the unit tier, the build, its size, and the browser tier
+mise run dev       # serve the source with Vite's dev server, reloading on each change
+mise run preview   # build, then serve dist/ as a static host would
+mise run build     # build the app into dist/
+mise run currency  # report every tool, package, and layer pin behind its latest; reads the network
+```
+
+Only `install` and `currency` read the network. No other task installs a missing tool; each names
+`mise run install` when one is missing. `dev` and `preview` serve at Vite's default
+host and port; no check runs them. `size` is a report, with no budget.
+
+## Config
+
+`public/config.json` holds the app's config, `{"apiBase": "<URL>"}`: the API the app calls, a URL
+or a path resolved against the page's base. The build copies it beside the page, and the app reads
+it once, at start. A page that carries an `#app-config` element, a
+`<script type="application/json">`, overrides it with that element's JSON.
+
+## Deploy
+
+`mise run build` writes the app to `dist/`, for any static host:
+
+- Serve `dist/` under the base the page's `<base href>` names; the build's asset URLs name it too.
+- Replace the built `config.json` with the deployment's own, so one build serves every deployment.
+- The host must answer `index.html` for any unknown path under the base, so a deep link or a
+  reload reaches the app's router.
+
+## How it's built
+
+- `index.html` is the foundation's application page. Its header's buttons open the Help and Settings
+  dialogs through invoker commands (`commandfor` and `command`), their `data-keys` bind ? and S
+  through the foundation's `keys.js`, and web-icons' `iconFill()` fills each `data-icon` marker with
+  its icon's markup, in the dev server and the build alike. The router mounts each view in `<main>`.
+- `src/theme.ts` is a Vite input of its own: Vite folds every module script `index.html` names
+  into one entry without `blocking="render"`, so a plugin in `vite.config.ts` puts the theme chunk
+  on the page, render-blocking, ahead of the entry. `rolldownOptions.output.strictExecutionOrder`
+  keeps each module's body in source order across chunks: without it, the chunk the Settings
+  dialog shares applies the stored theme before the theme chunk registers the profiles it names.
+- The components adopt their sheets through CSS module scripts,
+  `import sheet from "./x.css" with { type: "css" }`, which Vite doesn't support:
+  vite-plugin-standard-css-modules rewrites each such import in the layers' modules, the dev
+  server's `?v=` URLs of them included, to a constructed `CSSStyleSheet`, and a plain
+  `import "./x.css"` stays CSS Vite bundles. The plugin parses with `rolldown/utils`, which it
+  doesn't declare, so `package.json` declares rolldown at the version Vite resolves. The dev
+  server never pre-bundles the foundation or the components: the plugin would miss a pre-bundled
+  module's imports, and pre-bundling would split the foundation's registry.
+- The build targets es2024 for `src/main.ts`'s top-level await, which every browser the router
+  needs supports.
+- `mise run currency` holds typescript to typescript-eslint's peer range and rolldown to vite's
+  dependency range, so the build runs on the rolldown that vite is tested with.
+- `pnpm-workspace.yaml`'s `minimumReleaseAge: 0` turns off pnpm's day-long wait on a new release,
+  so a frozen install of a lockfile pinning a release under a day old doesn't fail. The layers,
+  `github:` dependencies at the top level, need no setting: pnpm guards only a git dependency
+  below the top level.
+- `tsconfig.json` names the foundation's ambient `*.css` declaration, so the app's stylesheet
+  imports resolve, and skips library checks, as the ESLint plugins' declarations name types they
+  don't install.
+- Prettier formats the code, the JSON, and the CSS alone; its default run would also rewrite the
+  Markdown, the YAML, and `pnpm-lock.yaml`.
+- The lint requires a description on every ESLint and TypeScript directive.
+- Chrome for Testing publishes no checksums: a chrome-headless-shell bump takes each platform's
+  sha256 and size from its download by hand. mise caches downloads by checksum, so a bump that
+  keeps the old sha256 installs the old build; the browser tier refuses a binary whose version
+  isn't the pin.

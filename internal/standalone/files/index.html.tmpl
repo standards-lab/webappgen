@@ -1,0 +1,88 @@
+<!doctype html>
+<!-- The app's page, the foundation's application page type, under its <base href>.
+     See README.md
+     Adapted from spike-html-apps (2883d78): test/consumers/app/index.html.
+     Adapted from web-components (6052866): demo/components.html, its header actions and dialogs. -->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <base href="{{html .Base}}" />
+    <title>{{html .Title}}</title>
+    <script type="module" src="./src/main.ts"></script>
+  </head>
+  <body class="page-app">
+    <header>
+      <h1>{{html .Title}}</h1>
+      <div class="header-actions">
+        <button
+          type="button"
+          class="glyph-button"
+          commandfor="help"
+          command="show-modal"
+          aria-label="Help"
+          aria-description=""
+          data-keys="?"
+          interestfor="help-hint"
+        >
+          <svg data-icon="octicon/question-16"></svg>
+          <span aria-hidden="true"><kbd>?</kbd></span>
+        </button>
+        <div id="help-hint" class="glyph-hint" popover="hint" aria-hidden="true">Help</div>
+        <button
+          type="button"
+          class="glyph-button"
+          commandfor="settings"
+          command="show-modal"
+          aria-label="Settings"
+          aria-description=""
+          data-keys="s"
+          interestfor="settings-hint"
+        >
+          <svg data-icon="octicon/gear-16"></svg>
+          <span aria-hidden="true"><kbd>S</kbd></span>
+        </button>
+        <div id="settings-hint" class="glyph-hint" popover="hint" aria-hidden="true">Settings</div>
+      </div>
+    </header>
+    <main></main>
+    <dialog id="help" class="dialog-fit" aria-labelledby="help-title">
+      <header class="dialog-header">
+        <h2 id="help-title" tabindex="-1" autofocus>Keyboard shortcuts</h2>
+        <button
+          type="button"
+          class="glyph-button"
+          commandfor="help"
+          command="close"
+          aria-label="Close"
+          aria-description=""
+          interestfor="help-close-hint"
+        >
+          <svg data-icon="octicon/x-16"></svg>
+          <span aria-hidden="true"><kbd>Esc</kbd></span>
+        </button>
+        <div id="help-close-hint" class="glyph-hint" popover="hint" aria-hidden="true">Close</div>
+      </header>
+      <sl-shortcuts></sl-shortcuts>
+    </dialog>
+    <dialog id="settings" class="dialog-wide" aria-labelledby="settings-title">
+      <header class="dialog-header">
+        <h2 id="settings-title">Settings</h2>
+        <button
+          type="button"
+          class="glyph-button"
+          commandfor="settings"
+          command="close"
+          aria-label="Close"
+          aria-description=""
+          interestfor="settings-close-hint"
+        >
+          <svg data-icon="octicon/x-16"></svg>
+          <span aria-hidden="true"><kbd>Esc</kbd></span>
+        </button>
+        <div id="settings-close-hint" class="glyph-hint" popover="hint" aria-hidden="true">Close</div>
+      </header>
+      <sl-settings></sl-settings>
+    </dialog>
+  </body>
+</html>

@@ -1,0 +1,61 @@
+# Releases the CLI from a pushed vX.Y.Z tag on main's merge commit.
+# See README.md
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      TAG: ${{ github.ref_name }}
+    steps:
+      - name: Check out every branch and tag, so main is at hand and go build finds the tag on HEAD
+        uses: actions/checkout@v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Refuse a tag whose commit isn't on main
+        run: |
+          set -euo pipefail
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "$TAG's commit $GITHUB_SHA isn't on main" >&2
+            exit 1
+          fi
+
+      - uses: jdx/mise-action@v5.3.0
+
+      - name: mise run install
+        run: mise run install
+
+      - name: mise run check
+        run: mise run check
+
+      - name: Build, check each binary's version against the tag, and pack
+        run: scripts/pack.sh "$TAG" dist
+
+      - name: Create the draft release
+        uses: taiki-e/create-gh-release-action@v1.12.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          changelog: CHANGELOG.md
+          draft: true
+
+      - name: Attach the archives and SHA256SUMS
+        run: gh release upload "$TAG" dist/*.tar.gz dist/SHA256SUMS
+
+      - name: Publish the release
+        run: gh release edit "$TAG" --draft=false
