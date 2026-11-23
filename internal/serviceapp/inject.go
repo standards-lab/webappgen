@@ -31,9 +31,13 @@ import (
 // A valid run writes the client into the --client-dir, as [Command] does,
 // wires it with [Wire], under the module go.mod declares, and edits the
 // service's configuration with [EditConfig]. When every Go anchor is found
-// and every configuration file edited it prints the next steps, [Command]'s
-// without git init, and exits 0. Otherwise it prints each edit left, then
-// the next steps, and exits 1. When a Go anchor is missing, the client and
+// and every configuration file edited it prints the next steps, the
+// client's mise install and mise run install, run in its directory with
+// mise -C, and the service's mise run check, and exits 0; with --install,
+// it runs the client's two steps itself first, as [Command] runs its
+// install steps, and prints the step left. Otherwise it prints each edit
+// left, then the next steps, the client's two among them, as --install runs
+// nothing, and exits 1. When a Go anchor is missing, the client and
 // its client file are written and no existing Go file is edited, and each
 // Go edit is printed with its file, its anchor, whether the anchor was
 // found, and the code to insert. Each configuration file [EditConfig]
@@ -52,8 +56,8 @@ func InjectCommand(version string) *cli.Command {
 		Validate: func(inv *cli.Invocation) error {
 			return o.validateService(inv.Args[0])
 		},
-		Run: func(_ context.Context, inv *cli.Invocation) error {
-			wiring, config, err := o.install(version)
+		Run: func(ctx context.Context, inv *cli.Invocation) error {
+			wiring, config, err := o.writeClient(version)
 			if err != nil {
 				return err
 			}
@@ -73,18 +77,18 @@ func InjectCommand(version string) *cli.Command {
 				}
 			}
 			if len(left) == 0 {
-				return o.writeNextSteps(inv.Stdout, config)
+				return o.installThenWriteNextSteps(ctx, inv, config, false)
 			}
 			if _, err := io.WriteString(inv.Stdout, "\n"); err != nil {
 				return err
 			}
-			if err := o.writeNextSteps(inv.Stdout, config); err != nil {
+			if err := o.writeNextSteps(inv.Stdout, config, o.installSteps(false)); err != nil {
 				return err
 			}
 			return fmt.Errorf("%s: apply the edits printed above by hand, then take the next steps", strings.Join(left, "; "))
 		},
 	}
-	o.define(cmd)
+	o.define(cmd, "then run mise install and mise run install in the client")
 	return cmd
 }
 

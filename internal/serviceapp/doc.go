@@ -16,5 +16,6 @@
 // anything is written. [EditConfig] edits the service's mise.toml and CI
 // workflow, each only when it holds the pinned template's text where the
 // edit goes, so its tasks and CI build the client, and writes its
-// .air.toml for the dev loop, never over one that exists.
+// .air.toml for the dev loop, never over one that exists. Both leaves'
+// --install runs their install steps with [project.Install].
 package serviceapp

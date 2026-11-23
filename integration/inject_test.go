@@ -29,13 +29,11 @@ func TestInjectServiceApp_Help(t *testing.T) {
 		"--base path", "(default /)",
 		"--api-base URL", "(default /api/)",
 		"--client-dir path", "(default client)",
+		"--install", "then run mise install and mise run install in the client",
 	} {
 		if !strings.Contains(res.Stdout, want) {
 			t.Errorf("stdout = %q, want it to hold %q", res.Stdout, want)
 		}
-	}
-	if strings.Contains(res.Stdout, "--install") {
-		t.Errorf("stdout = %q, want no --install", res.Stdout)
 	}
 }
 
@@ -132,8 +130,8 @@ func TestInjectServiceApp_UsageErrors(t *testing.T) {
 		},
 		{
 			name: "unknown flag",
-			args: []string{"{dir}", "--install"},
-			want: "flag provided but not defined: -install",
+			args: []string{"{dir}", "--watch"},
+			want: "flag provided but not defined: -watch",
 		},
 		{
 			name: "base not absolute",
@@ -215,23 +213,30 @@ func TestInjectServiceApp_WiresATemplateService(t *testing.T) {
 	env := append(goOffline(t), offline(t)...)
 	copyTemplate(t, env, dir)
 
-	res := integration.RunEnv(t, env, "inject", "service-app", dir, "--title", "Demo")
+	res := integration.RunEnv(t, env, "inject", "service-app", dir, "--title", "Demo", "--install")
 
 	if res.Code != process.ExitOK {
 		t.Fatalf("code = %d, want %d; stderr = %q", res.Code, process.ExitOK, res.Stderr)
 	}
-	want := "Next steps:\n  cd " + dir + "\n  mise install\n" +
-		"  mise -C client install\n  mise -C client run install\n" +
-		"  mise run check\n"
+	want := "Next steps:\n  cd " + dir + "\n  mise run check\n"
 	if res.Stdout != want {
 		t.Errorf("stdout = %q, want %q", res.Stdout, want)
 	}
-	if res.Stderr != "" {
-		t.Errorf("stderr = %q, want empty", res.Stderr)
+	first := "Running mise -C client install in " + dir
+	if !strings.HasPrefix(res.Stderr, first+"\n") {
+		t.Errorf("stderr = %q, want it to begin with %q", res.Stderr, first)
+	}
+	wantSteps(t, res.Stderr, dir, first, "mise -C client run install")
+	if strings.Contains(res.Stderr, "Running mise install") || strings.Contains(res.Stderr, "Running go mod download") {
+		t.Errorf("stderr = %q, want only the client's steps run", res.Stderr)
 	}
 	client := filepath.Join(dir, "client")
-	if got := integration.Tree(t, client); !slices.Equal(got, writtenClient) {
-		t.Errorf("client tree = %q, want %q", got, writtenClient)
+	installed := func(name string) bool { return name == "node_modules" || strings.HasPrefix(name, "node_modules/") }
+	if got := slices.DeleteFunc(integration.Tree(t, client), installed); !slices.Equal(got, writtenClient) {
+		t.Errorf("client tree, node_modules aside = %q, want %q", got, writtenClient)
+	}
+	if _, err := os.Stat(filepath.Join(client, "node_modules", "@standards-lab", "web-app-sdk", "package.json")); err != nil {
+		t.Errorf("--install didn't install @standards-lab/web-app-sdk: %v", err)
 	}
 	if got, want := read(t, client, "package.json"), `"name": "my-service",`; !strings.Contains(got, want) {
 		t.Errorf("package.json = %q, want it to hold %q", got, want)
@@ -242,7 +247,6 @@ func TestInjectServiceApp_WiresATemplateService(t *testing.T) {
 
 	ctx, cancel := context.WithTimeout(t.Context(), checkTimeout)
 	defer cancel()
-	runIn(ctx, t, client, env, "mise", "run", "install")
 	testService(ctx, t, dir, client, env)
 	runIn(ctx, t, dir, env, "go", "vet", "./...")
 
@@ -268,7 +272,7 @@ func TestInjectServiceApp_LeavesTheEditsOnADifferentRoot(t *testing.T) {
 		"internal/app/server.go": read(t, dir, "internal/app/server.go"),
 	}
 
-	res := integration.Run(t, "inject", "service-app", dir, "--client-dir", "web/ui")
+	res := integration.Run(t, "inject", "service-app", dir, "--client-dir", "web/ui", "--install")
 
 	if res.Code != process.ExitFailure {
 		t.Fatalf("code = %d, want %d; stderr = %q", res.Code, process.ExitFailure, res.Stderr)
@@ -299,7 +303,7 @@ func TestInjectServiceApp_LeavesTheEditsOnADifferentRoot(t *testing.T) {
 		"\tdefineClient(a.graph, &a.nodes)\n" +
 		"\ninternal/app/server.go, at " + serviceapp.AnchorRouter + " (missing): insert this call before it\n" +
 		"\tmountClient(router, s, n)\n" +
-		"\nNext steps:\n  cd " + dir + "\n  mise install\n" +
+		"\nNext steps:\n  cd " + dir + "\n" +
 		"  mise -C web/ui install\n  mise -C web/ui run install\n" +
 		"  mise run check\n"
 	if res.Stdout != want {
@@ -361,7 +365,7 @@ func TestInjectServiceApp_LeavesTheConfigEditsOnDifferingFiles(t *testing.T) {
 		"\nEdited no .air.toml: it exists. Make this edit by hand:\n\n.air.toml: write it with this text\n" +
 			"\t# The service's live reload under air, which mise run dev runs.\n",
 		"\tsend_interrupt = true\n",
-		"\tclean_on_exit = true\n\nNext steps:\n  cd " + dir + "\n  mise install\n" +
+		"\tclean_on_exit = true\n\nNext steps:\n  cd " + dir + "\n" +
 			"  mise -C client install\n  mise -C client run install\n  mise -C client run build\n" +
 			"  mise run check\n",
 	} {

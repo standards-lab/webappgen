@@ -37,6 +37,7 @@ func TestNewServiceApp_Help(t *testing.T) {
 		"--base path", "(default /)",
 		"--api-base URL", "(default /api/)",
 		"--client-dir path", "(default client)",
+		"--install", "then run mise install and go mod download in the service, and mise install and mise run install in the client",
 	} {
 		if !strings.Contains(res.Stdout, want) {
 			t.Errorf("stdout = %q, want it to hold %q", res.Stdout, want)
@@ -79,8 +80,8 @@ func TestNewServiceApp_UsageErrors(t *testing.T) {
 		},
 		{
 			name: "unknown flag",
-			args: []string{"example.com/demo", "{dir}", "--install"},
-			want: "flag provided but not defined: -install",
+			args: []string{"example.com/demo", "{dir}", "--watch"},
+			want: "flag provided but not defined: -watch",
 		},
 		{
 			name: "base not absolute",
@@ -214,7 +215,7 @@ func TestNewServiceApp_WritesTheClient(t *testing.T) {
 	if res.Code != process.ExitOK {
 		t.Fatalf("code = %d, want %d; stderr = %q", res.Code, process.ExitOK, res.Stderr)
 	}
-	want := "Next steps:\n  cd " + dir + "\n  git init\n  mise install\n" +
+	want := "Next steps:\n  cd " + dir + "\n  git init\n  mise install\n  go mod download\n" +
 		"  mise -C web/My-UI install\n  mise -C web/My-UI run install\n" +
 		"  mise run check\n"
 	if res.Stdout != want {
@@ -277,20 +278,17 @@ func TestNewServiceApp_WritesThenChecks(t *testing.T) {
 	}
 	env := append(goOffline(t), offline(t)...)
 
-	res := integration.RunEnv(t, env, "new", "service-app", "example.com/demo", dir)
+	res := integration.RunEnv(t, env, "new", "service-app", "example.com/demo", dir, "--install")
 
 	if res.Code != process.ExitOK {
 		t.Fatalf("code = %d, want %d; stderr = %q", res.Code, process.ExitOK, res.Stderr)
 	}
-	want := "Next steps:\n  cd " + dir + "\n  git init\n  mise install\n" +
-		"  mise -C client install\n  mise -C client run install\n" +
-		"  mise run check\n"
+	want := "Next steps:\n  cd " + dir + "\n  git init\n  mise run check\n"
 	if res.Stdout != want {
 		t.Errorf("stdout = %q, want %q", res.Stdout, want)
 	}
-	if want := "gonew: initialized example.com/demo in " + dir + "\n"; !strings.HasSuffix(res.Stderr, want) {
-		t.Errorf("stderr = %q, want it to end with %q", res.Stderr, want)
-	}
+	wantSteps(t, res.Stderr, dir, "gonew: initialized example.com/demo in "+dir,
+		"mise install", "go mod download", "mise -C client install", "mise -C client run install")
 	if got := read(t, dir, "go.mod"); !strings.HasPrefix(got, "module example.com/demo\n") {
 		t.Errorf("go.mod = %q, want it to declare module example.com/demo", got)
 	}
@@ -298,7 +296,6 @@ func TestNewServiceApp_WritesThenChecks(t *testing.T) {
 	ctx, cancel := context.WithTimeout(t.Context(), checkTimeout)
 	defer cancel()
 	client := filepath.Join(dir, "client")
-	runIn(ctx, t, client, env, "mise", "run", "install")
 	runIn(ctx, t, client, env, "mise", "run", "check")
 	if _, err := os.Stat(filepath.Join(client, "dist", ".vite", "manifest.json")); err != nil {
 		t.Fatalf("the client's check built no manifest: %v", err)
@@ -316,6 +313,66 @@ func TestNewServiceApp_WritesThenChecks(t *testing.T) {
 	wantStatus(t, origin+"/healthz", http.StatusOK)
 	if body := wantStatus(t, origin+"/api/x", http.StatusNotFound); body == shell {
 		t.Errorf("GET /api/x = the shell, want the API's answer")
+	}
+}
+
+// wantSteps checks that stderr names each of steps as run in dir, in order,
+// after the line first.
+func wantSteps(t *testing.T, stderr, dir, first string, steps ...string) {
+	t.Helper()
+	rest := stderr
+	for _, line := range append([]string{first}, steps...) {
+		if line != first {
+			line = "Running " + line + " in " + dir
+		}
+		_, after, ok := strings.Cut(rest, line+"\n")
+		if !ok {
+			t.Errorf("stderr = %q, want it to hold %q after the lines before it", stderr, line)
+			return
+		}
+		rest = after
+	}
+}
+
+// fakeMise returns a PATH of the go running the tests and a mise that
+// succeeds but for the step whose arguments are failArgs, which exits 3.
+func fakeMise(t *testing.T, failArgs string) string {
+	t.Helper()
+	bin := t.TempDir()
+	goBin, err := exec.LookPath("go")
+	if err != nil {
+		t.Fatal(err)
+	}
+	must(t, os.Symlink(goBin, filepath.Join(bin, "go")))
+	script := "#!/bin/sh\nif [ \"$*\" = '" + failArgs + "' ]; then echo \"mise $*: failed\"; exit 3; fi\n"
+	must(t, os.WriteFile(filepath.Join(bin, "mise"), []byte(script), 0o755))
+	return "PATH=" + bin
+}
+
+func TestNewServiceApp_InstallStepFails(t *testing.T) {
+	dir := filepath.Join(t.TempDir(), "my-service")
+	env := append(goOffline(t), fakeMise(t, "-C web/ui install"))
+
+	res := integration.RunEnv(t, env, "new", "service-app", "example.com/demo", dir, "--client-dir", "web/ui", "--install")
+
+	if res.Code != process.ExitFailure {
+		t.Fatalf("code = %d, want %d; stderr = %q", res.Code, process.ExitFailure, res.Stderr)
+	}
+	wantErr := "webappgen new service-app: mise -C web/ui install: exit status 3: fix what it reports, " +
+		"then run mise -C web/ui install and mise -C web/ui run install in " + dir + "\n"
+	if !strings.HasSuffix(res.Stderr, wantErr) {
+		t.Errorf("stderr = %q, want it to end with %q", res.Stderr, wantErr)
+	}
+	wantSteps(t, res.Stderr, dir, "gonew: initialized example.com/demo in "+dir,
+		"mise install", "go mod download", "mise -C web/ui install")
+	if strings.Contains(res.Stderr, "Running mise -C web/ui run install") {
+		t.Errorf("stderr = %q, want no step run after the one that failed", res.Stderr)
+	}
+	if res.Stdout != "" {
+		t.Errorf("stdout = %q, want empty", res.Stdout)
+	}
+	if got := integration.Tree(t, filepath.Join(dir, "web", "ui")); !slices.Equal(got, writtenClient) {
+		t.Errorf("client tree = %q, want the written client, %q", got, writtenClient)
 	}
 }
 

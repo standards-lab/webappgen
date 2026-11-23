@@ -13,6 +13,8 @@ import (
 	"github.com/standards-lab/webappgen/internal/project"
 )
 
+var steps = []project.Step{{"mise", "install"}, {"mise", "run", "install"}}
+
 func fakeMise(t *testing.T, failArgs string, code int) string {
 	t.Helper()
 	bin := t.TempDir()
@@ -45,7 +47,7 @@ func TestInstall_RunsTheStepsInOrder(t *testing.T) {
 	log := fakeMise(t, "", 0)
 	var w bytes.Buffer
 
-	if err := project.Install(context.Background(), dir, &w); err != nil {
+	if err := project.Install(context.Background(), dir, &w, steps...); err != nil {
 		t.Fatalf("Install() error = %v; output = %q", err, w.String())
 	}
 	if got, want := runs(t, log), []string{dir + " install", dir + " run install"}; !slices.Equal(got, want) {
@@ -63,7 +65,7 @@ func TestInstall_MiseMissing(t *testing.T) {
 	t.Setenv("PATH", t.TempDir())
 	var w bytes.Buffer
 
-	err := project.Install(context.Background(), dir, &w)
+	err := project.Install(context.Background(), dir, &w, steps...)
 
 	want := "mise install: mise isn't on PATH: install mise (https://mise.jdx.dev), then run mise install and mise run install in " + dir
 	if err == nil || err.Error() != want {
@@ -95,7 +97,7 @@ func TestInstall_StepFails(t *testing.T) {
 			dir := t.TempDir()
 			log := fakeMise(t, tc.failArgs, 3)
 
-			err := project.Install(context.Background(), dir, new(bytes.Buffer))
+			err := project.Install(context.Background(), dir, new(bytes.Buffer), steps...)
 
 			if want := strings.ReplaceAll(tc.want, "{dir}", dir); err == nil || err.Error() != want {
 				t.Errorf("Install() error = %v, want %q", err, want)
@@ -108,5 +110,32 @@ func TestInstall_StepFails(t *testing.T) {
 				t.Errorf("mise runs = %q, want %q", got, want)
 			}
 		})
+	}
+}
+
+func TestInstall_ProgramMissing(t *testing.T) {
+	dir := t.TempDir()
+	log := fakeMise(t, "", 0)
+	var w bytes.Buffer
+
+	err := project.Install(context.Background(), dir, &w,
+		project.Step{"mise", "install"}, project.Step{"go", "mod", "download"}, project.Step{"mise", "-C", "web ui", "install"})
+
+	want := "go mod download: go isn't on PATH: install Go (https://go.dev/dl), " +
+		"then run mise install and go mod download and mise -C 'web ui' install in " + dir
+	if err == nil || err.Error() != want {
+		t.Errorf("Install() error = %v, want %q", err, want)
+	}
+	if got := runs(t, log); got != nil {
+		t.Errorf("mise runs = %q, want none", got)
+	}
+	if w.Len() != 0 {
+		t.Errorf("output = %q, want none", w.String())
+	}
+}
+
+func TestStep_String(t *testing.T) {
+	if got, want := (project.Step{"mise", "-C", "it's", "run", "install"}).String(), `mise -C 'it'\''s' run install`; got != want {
+		t.Errorf("String() = %q, want %q", got, want)
 	}
 }

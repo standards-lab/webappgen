@@ -63,6 +63,8 @@ type options struct {
 	install bool
 }
 
+var installSteps = []project.Step{{"mise", "install"}, {"mise", "run", "install"}}
+
 // Command returns the standalone leaf, `new standalone <dir>`. Its Args
 // and Validate refuse, as usage errors that name the fix, a missing or
 // extra directory argument, a directory that exists and isn't empty, and a
@@ -94,9 +96,9 @@ func Command(version string) *cli.Command {
 				return err
 			}
 			if !o.install {
-				return project.WriteNextSteps(inv.Stdout, o.dir, "mise install", "mise run install", "mise run check")
+				return project.WriteNextSteps(inv.Stdout, o.dir, append(project.StepNames(installSteps), "mise run check")...)
 			}
-			if err := project.Install(ctx, o.dir, inv.Stderr); err != nil {
+			if err := project.Install(ctx, o.dir, inv.Stderr, installSteps...); err != nil {
 				return err
 			}
 			return project.WriteNextSteps(inv.Stdout, o.dir, "mise run check")

@@ -30,8 +30,9 @@ Only `install` and `currency` read the network. No other task installs a missing
 its browser tier serves the build behind the shell `NewClient` renders.
 
 The client has no dev server or preview of its own: the service serves it. In the service's root,
-`mise run dev` builds the client and runs the service, building and restarting again on each
-change, and `mise run serve` builds the client, then runs the service.
+`mise run serve` builds the client, then runs the service, and `mise run dev` builds the client,
+then rebuilds it on each change with `vite build --watch` while air rebuilds and restarts the
+service.
 {{- else}}
 `mise run install` when one is missing. `dev` and `preview` serve at Vite's default
 host and port; no check runs them. `size` is a report, with no budget.
