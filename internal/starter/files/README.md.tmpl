@@ -42,8 +42,9 @@ host and port; no check runs them. `size` is a report, with no budget.
 {{if eq .Kind "service-app"}}
 The service writes the app's config, `{"apiBase": "<URL>"}`, into the shell as its `#app-config`
 element, a `<script type="application/json">`: the API the app calls, a URL or a path resolved
-against the page's base. The app reads it once, at start. It is the service wiring's `apiBase`
-constant, which webappgen wrote from `--api-base` as `{{.APIBase}}`.
+against the page's base. The app reads it once, at start. The service takes it from the
+`clientAPIBase` constant in its `internal/app/client.go`, which webappgen wrote from `--api-base`
+as `{{.APIBase}}`.
 
 ## Deploy
 

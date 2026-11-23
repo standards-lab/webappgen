@@ -24,8 +24,8 @@ project's tasks, deployment, and the contributor workflow.
   `mise run install` in the project.
 - **Service-app kind** (built): [`internal/serviceapp`](../internal/serviceapp/): `new
   service-app <module> <dir>` copies go-web-sdk-template with gonew, and `inject service-app
-  <service-dir>` takes an existing copy; each writes the client, its Go package, and
-  `internal/app/client.go`, and edits the service's wiring, `mise.toml`, CI, and `.air.toml`,
+  <service-dir>` takes an existing copy; each writes the client, its Go package,
+  `internal/app/client.go`, and `.air.toml`, and edits the service's wiring, `mise.toml`, and CI,
   printing the edits a differing service leaves. `--install` runs the install steps.
   [docs/service-app.md](../docs/service-app.md) details what is written.
 - **The written project** (built): [`internal/starter/files`](../internal/starter/files/), the
@@ -35,8 +35,9 @@ project's tasks, deployment, and the contributor workflow.
   tiers. Its [`README.md`](../internal/starter/files/README.md.tmpl) documents its tasks and how
   it is built.
 - **The full proof** (built): [`integration`](../integration/): the root `mise run install`
-  warms `.cache/pnpm-store`, and the integration tier writes a project with `--install` offline
-  and runs the written project's check.
+  fills `.cache/pnpm-store` and the module cache, and the integration tier, offline, writes each
+  kind with `--install` and runs the written project's check; for the service app it also builds,
+  tests, and starts the service, then fetches the shell, an asset, and a deep link.
 - **Release** (built): [`release.yml`](../.github/workflows/release.yml): a tag on main
   triggers the workflow, which runs `scripts/pack.sh` to build four archives and `SHA256SUMS`,
   attaches them to a draft release, then publishes it.
@@ -52,5 +53,5 @@ copied file carries its own line.
   `package.json` and `test/consumers/app/package.json`, moved onto the standards-lab layers.
 - `internal/standalone/files/public/config.json.tmpl`: new.
 - `internal/starter/files/pnpm-lock.yaml`: produced by `pnpm install` (pnpm 12.21.0).
-- `internal/standalone/testdata/README.md.golden`: generated, the starter's `README.md.tmpl` as
-  the standalone kind writes it for `my-app`, byte for byte.
+- `internal/standalone/testdata/README.md.golden` and `mise.toml.golden`: generated, the
+  starter's templates as the standalone kind writes them for `my-app`, byte for byte.

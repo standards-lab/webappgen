@@ -117,10 +117,8 @@ Each prints the steps left, `inject`'s from `mise -C client install`. Both take 
 | `--client-dir path` | `client` | the client's directory in the service |
 | `--install` | off | run the install steps, leaving `mise run check` |
 
-`--install` runs the steps before `mise run check`, as the standalone kind's does.
-
 Each writes the client, its Go package, `internal/app/client.go`, and `.air.toml`, and edits the
-service's wiring, `mise.toml`, and CI to build the client. A service that
+service's wiring to serve the client and its `mise.toml` and CI to build it. A service that
 differs from the template where an edit goes keeps that file: `inject` prints the edits left,
 then the next steps, and exits 1, running no install step.
 [docs/service-app.md](docs/service-app.md) details each file and the printed edits.
@@ -155,25 +153,26 @@ The repository is the Go module `github.com/standards-lab/webappgen` on
 [go-cli-sdk](https://github.com/standards-lab/go-cli-sdk). Every tool is pinned in `mise.toml`:
 
 ```sh
-mise run install   # the pins, the module's requirements, and the warmed pnpm store; reads the network
+mise run install   # the pins, the module's requirements, and the caches below; reads the network
 mise run check     # vet, lint, and the unit and integration tiers; reads no network
 mise run currency  # every Go requirement, tool, and action pin behind its latest; reads the network
 ```
 
-Only `mise run install` and `mise run currency` read the network. No other task installs a missing
-tool; each names `mise run install` when one is missing. `mise run install` warms
-`.cache/pnpm-store` with the starter's packages, so the integration tier's full proof writes a
-project with `--install` and runs the project's own check offline. The module is built alone, with
-`GOWORK=off`, never in a workspace a parent directory holds. Tests are black-box, in each package's
-`_test` package: golangci-lint's testpackage allows only an `export_test.go`, and only to export a
-clock or probe hook the API can't reach deterministically. nolintlint requires every `//nolint` to
-name its linter and give its reason.
+No task but `install` installs a missing tool; each names `mise run install` when one is missing.
+`mise run install` fills two caches the offline integration tier reads: `scripts/fetch-store.sh`
+writes a project and fetches its packages into `.cache/pnpm-store`, and `scripts/fetch-service.sh`
+puts the service-app kind's pins and the template's requirements in the module cache and installs
+the template's tools. The module is built alone, with `GOWORK=off`, never in a workspace a parent
+directory holds. Tests are black-box, in each package's `_test` package: golangci-lint's
+testpackage allows only an `export_test.go`, and only to export a clock or probe hook the API can't
+reach deterministically. nolintlint requires every `//nolint` to name its linter and give its
+reason.
 
 The root `mise.toml` pins every tool the starter's `internal/starter/files/mise.toml.tmpl` pins,
-each entry as the starter writes it, and a unit test holds the two equal. Bump a shared tool in
-both files at once; bumping chrome-headless-shell also takes each platform's sha256 and size,
-taken by hand from its download, in both. A changed starter package regenerates
-`internal/starter/files/pnpm-lock.yaml` with the pinned pnpm.
+each entry as the starter writes it, and air as the service-app kind's `mise.toml` edit pins it; a
+unit test holds them equal. Bump a shared tool in both files at once; bumping chrome-headless-shell
+also takes each platform's sha256 and size from its download, by hand, in both. A changed starter
+package regenerates `internal/starter/files/pnpm-lock.yaml` with the pinned pnpm.
 
 A release is a `vX.Y.Z` tag pushed on main's merge commit, with its `CHANGELOG.md` section; the
 release workflow tags nothing. It refuses a tag whose commit isn't on main, checks, and builds
