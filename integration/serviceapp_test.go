@@ -3,14 +3,20 @@
 package integration_test
 
 import (
+	"bufio"
+	"bytes"
 	"context"
+	"io"
+	"net/http"
 	"os"
 	"os/exec"
 	"path"
 	"path/filepath"
+	"regexp"
 	"slices"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/standards-lab/go-core/process"
 
@@ -278,24 +284,157 @@ func TestNewServiceApp_WritesThenChecks(t *testing.T) {
 	ctx, cancel := context.WithTimeout(t.Context(), checkTimeout)
 	defer cancel()
 	client := filepath.Join(dir, "client")
-	for _, args := range [][]string{{"run", "install"}, {"run", "check"}} {
-		cmd := exec.CommandContext(ctx, "mise", args...)
-		cmd.Dir, cmd.Env = client, append(os.Environ(), env...)
-		out, err := cmd.CombinedOutput()
-		if err != nil {
-			t.Fatalf("mise %s in the written client: %v\n%s", strings.Join(args, " "), err, out)
-		}
-		t.Logf("$ mise %s\n%s", strings.Join(args, " "), out)
-	}
+	runIn(ctx, t, client, env, "mise", "run", "install")
+	runIn(ctx, t, client, env, "mise", "run", "check")
 	if _, err := os.Stat(filepath.Join(client, "dist", ".vite", "manifest.json")); err != nil {
 		t.Fatalf("the client's check built no manifest: %v", err)
 	}
-	for _, args := range [][]string{{"vet", "./..."}, {"test", "-count=1", "./..."}} {
-		cmd := exec.CommandContext(ctx, "go", args...)
-		cmd.Dir, cmd.Env = dir, append(os.Environ(), env...)
-		out, err := cmd.CombinedOutput()
-		if err != nil {
-			t.Fatalf("go %s in the written service: %v\n%s", strings.Join(args, " "), err, out)
+	runIn(ctx, t, dir, env, "go", "vet", "./...")
+	runIn(ctx, t, dir, env, "go", "test", "-count=1", "./...")
+
+	origin := serve(ctx, t, dir, env)
+	shell := wantShell(t, origin, "/", "/api/")
+	wantAsset(t, origin, "/", shell)
+	if body := wantStatus(t, origin+"/settings/x", http.StatusOK); body != shell {
+		t.Errorf("GET /settings/x = %q, want the shell", body)
+	}
+	wantStatus(t, origin+"/healthz", http.StatusOK)
+	if body := wantStatus(t, origin+"/api/x", http.StatusNotFound); body == shell {
+		t.Errorf("GET /api/x = the shell, want the API's answer")
+	}
+}
+
+func TestNewServiceApp_ServesUnderABase(t *testing.T) {
+	dir := filepath.Join(t.TempDir(), "my-service")
+	env := append(goOffline(t), offline(t)...)
+
+	res := integration.RunEnv(t, env, "new", "service-app", "example.com/demo", dir,
+		"--base", "/app/", "--client-dir", "web/ui", "--api-base", "https://api.example.com/v1/")
+
+	if res.Code != process.ExitOK {
+		t.Fatalf("code = %d, want %d; stderr = %q", res.Code, process.ExitOK, res.Stderr)
+	}
+	ctx, cancel := context.WithTimeout(t.Context(), checkTimeout)
+	defer cancel()
+	client := filepath.Join(dir, "web", "ui")
+	runIn(ctx, t, client, env, "mise", "run", "install")
+	runIn(ctx, t, client, env, "mise", "run", "build")
+	runIn(ctx, t, dir, env, "go", "vet", "./...")
+	runIn(ctx, t, dir, env, "go", "test", "-count=1", "./...")
+
+	origin := serve(ctx, t, dir, env)
+	shell := wantShell(t, origin, "/app/", "https://api.example.com/v1/")
+	wantAsset(t, origin, "/app/", shell)
+	if body := wantStatus(t, origin+"/app/settings/x", http.StatusOK); body != shell {
+		t.Errorf("GET /app/settings/x = %q, want the shell", body)
+	}
+	wantStatus(t, origin+"/healthz", http.StatusOK)
+	wantStatus(t, origin+"/readyz", http.StatusOK)
+	for _, p := range []string{"/api/x", "/settings/x", "/"} {
+		if body := wantStatus(t, origin+p, http.StatusNotFound); body == shell {
+			t.Errorf("GET %s = the shell, want the service's answer outside the base", p)
 		}
+	}
+}
+
+func runIn(ctx context.Context, t *testing.T, dir string, env []string, name string, args ...string) {
+	t.Helper()
+	cmd := exec.CommandContext(ctx, name, args...)
+	cmd.Dir, cmd.Env = dir, append(os.Environ(), env...)
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("%s %s in %s: %v\n%s", name, strings.Join(args, " "), dir, err, out)
+	}
+}
+
+var readyAddr = regexp.MustCompile(`msg="server ready" addr=(\S+)`)
+
+func serve(ctx context.Context, t *testing.T, dir string, env []string) string {
+	t.Helper()
+	server := filepath.Join(t.TempDir(), "server")
+	runIn(ctx, t, dir, env, "go", "build", "-o", server, "./cmd/server")
+	cmd := exec.CommandContext(ctx, server)
+	cmd.Dir = dir
+	cmd.Env = append(os.Environ(), "APP_ENV=local", "APP_SERVER_PORT=0")
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := cmd.Start(); err != nil {
+		t.Fatalf("start the service: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = cmd.Process.Signal(os.Interrupt)
+		_ = cmd.Wait()
+		if t.Failed() {
+			t.Logf("the service's stderr:\n%s", stderr.String())
+		}
+	})
+	addr := make(chan string, 1)
+	go func() {
+		scanner := bufio.NewScanner(stdout)
+		for scanner.Scan() {
+			if m := readyAddr.FindStringSubmatch(scanner.Text()); m != nil {
+				addr <- m[1]
+			}
+		}
+		close(addr)
+	}()
+	select {
+	case a, ok := <-addr:
+		if !ok {
+			t.Fatal("the service exited before it logged server ready")
+		}
+		return "http://" + a
+	case <-time.After(time.Minute):
+		t.Fatal("the service logged no server ready within a minute")
+	}
+	return ""
+}
+
+func wantStatus(t *testing.T, url string, status int) string {
+	t.Helper()
+	resp, err := http.Get(url)
+	if err != nil {
+		t.Fatalf("GET %s: %v", url, err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatalf("GET %s: %v", url, err)
+	}
+	if resp.StatusCode != status {
+		t.Errorf("GET %s = %d, want %d; body = %q", url, resp.StatusCode, status, body)
+	}
+	return string(body)
+}
+
+func wantShell(t *testing.T, origin, base, apiBase string) string {
+	t.Helper()
+	shell := wantStatus(t, origin+base, http.StatusOK)
+	for _, want := range []string{
+		`<base href="` + base + `">`,
+		`<script type="application/json" id="app-config">{"apiBase":"` + apiBase + `"}</script>`,
+	} {
+		if !strings.Contains(shell, want) {
+			t.Errorf("GET %s = %q, want it to hold %q", base, shell, want)
+		}
+	}
+	return shell
+}
+
+var entryScript = regexp.MustCompile(`<script type="module" src="([^"]+)"></script>`)
+
+func wantAsset(t *testing.T, origin, base, shell string) {
+	t.Helper()
+	m := entryScript.FindStringSubmatch(shell)
+	if m == nil {
+		t.Fatalf("the shell %q names no entry script", shell)
+	}
+	asset := wantStatus(t, origin+path.Join(base, m[1]), http.StatusOK)
+	if asset == shell || asset == "" {
+		t.Errorf("GET %s = %q, want the entry module", path.Join(base, m[1]), asset)
 	}
 }

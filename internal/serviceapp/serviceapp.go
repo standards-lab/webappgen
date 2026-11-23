@@ -96,12 +96,14 @@ type options struct {
 // running gonew at [ToolsPin] through go run, its progress on stderr. It
 // then writes the client into the --client-dir in dir, never prompting:
 // the starter, then [Files] over it, rendered with the flags' [Values] and
-// version, the webappgen version writing it. It then prints the next
+// version, the webappgen version writing it, and wires it into the
+// service's composition root with [Wire]. It then prints the next
 // steps, a cd into dir, git init, mise install, the client's mise install,
 // mise run install, and mise run build, run in its directory with mise -C,
 // and the service's mise run check, and exits 0. A go missing from PATH, a
-// gonew that fails, or a client directory the copied template already
-// holds files in exits nonzero naming it.
+// gonew that fails, a client directory the copied template already holds
+// files in, or a template [Wire] finds an anchor missing from exits
+// nonzero naming it.
 func Command(version string) *cli.Command {
 	var o options
 	cmd := &cli.Command{
@@ -127,6 +129,9 @@ func Command(version string) *cli.Command {
 			if err := project.Write(client, values, starter.Files, Files); err != nil {
 				return err
 			}
+			if err := wireTemplate(o); err != nil {
+				return err
+			}
 			mise := "mise -C " + project.ShellQuote(o.clientDir)
 			return project.WriteNextSteps(inv.Stdout, o.dir, "git init", "mise install",
 				mise+" install", mise+" run install", mise+" run build", "mise run check")
@@ -139,6 +144,26 @@ func Command(version string) *cli.Command {
 	flags.StringVar(&o.apiBase, "api-base", "/api/", "the `URL` of the API the web client calls")
 	flags.StringVar(&o.clientDir, "client-dir", "client", "the `path` in the service the web client is written into")
 	return cmd
+}
+
+func wireTemplate(o options) error {
+	wiring, err := Wire(o.dir, o.module, WireOptions{
+		Base: o.base, Title: o.title, APIBase: o.apiBase, ClientDir: o.clientDir,
+	})
+	if err != nil {
+		return err
+	}
+	var missing []string
+	for _, e := range wiring.Left {
+		if !e.Found {
+			missing = append(missing, e.Anchor)
+		}
+	}
+	if len(missing) > 0 {
+		return fmt.Errorf("the copied template lacks %s, where the client is wired in: report it against %s",
+			strings.Join(missing, ", "), TemplatePin)
+	}
+	return nil
 }
 
 func moduleDirArgs(args []string) error {

@@ -7,5 +7,7 @@
 // [ToolsPin] are the versions it copies and copies with; [CheckModule] is
 // the check of the written service's module path, [ParseClientDir] of the
 // directory the client is written into, and [PackageName] names the
-// client's Go package.
+// client's Go package. [Wire] wires the client into the service's
+// composition root: the client file it writes, and its edits at the
+// template's anchors, applied all together or left all together.
 package serviceapp
