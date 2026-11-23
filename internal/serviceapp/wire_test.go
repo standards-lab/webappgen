@@ -280,6 +280,9 @@ func TestWire_Refuses(t *testing.T) {
 			tc.setup(t, dir)
 			before := snapshot(t, dir)
 
+			if err := serviceapp.CheckWire(dir); err == nil || !strings.HasPrefix(err.Error(), tc.want) {
+				t.Errorf("CheckWire error = %v, want it to begin %q", err, tc.want)
+			}
 			_, err := serviceapp.Wire(dir, "example.com/demo", serviceapp.WireOptions{
 				Base: "/", Title: "demo", APIBase: "/api/", ClientDir: "client",
 			})
@@ -289,6 +292,33 @@ func TestWire_Refuses(t *testing.T) {
 			}
 			if after := snapshot(t, dir); !maps.Equal(after, before) {
 				t.Errorf("Wire changed the service: %q, want %q", slices.Sorted(maps.Keys(after)), slices.Sorted(maps.Keys(before)))
+			}
+		})
+	}
+}
+
+func TestCheckWire_Accepts(t *testing.T) {
+	for _, tc := range []struct {
+		name     string
+		shape    string
+		old, new string
+	}{
+		{name: "template", shape: "template"},
+		{name: "go-web-service", shape: "service"},
+		{name: "anchor missing", shape: "template", old: "return router, nil", new: "return router, check(router)"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			dir := copyFixture(t, tc.shape)
+			if tc.old != "" {
+				writeAppFile(t, dir, "server.go", strings.Replace(appFile(t, dir, "server.go"), tc.old, tc.new, 1))
+			}
+			before := snapshot(t, dir)
+
+			if err := serviceapp.CheckWire(dir); err != nil {
+				t.Errorf("CheckWire error = %v, want nil", err)
+			}
+			if after := snapshot(t, dir); !maps.Equal(after, before) {
+				t.Errorf("CheckWire changed the service: %q, want %q", slices.Sorted(maps.Keys(after)), slices.Sorted(maps.Keys(before)))
 			}
 		})
 	}

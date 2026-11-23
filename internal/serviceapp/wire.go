@@ -108,54 +108,74 @@ type Wiring struct {
 // already holds [ClientFile], or declares an identifier the client file
 // declares, or Nodes already has a Dist or Client field.
 func Wire(dir, module string, opts WireOptions) (Wiring, error) {
+	p, err := prepare(dir)
+	if err != nil {
+		return Wiring{}, err
+	}
+	source, err := renderClient(p.pkg, module, opts)
+	if err != nil {
+		return Wiring{}, err
+	}
 	appDir := filepath.Join(dir, filepath.FromSlash(AppDir))
-	clientPath := filepath.Join(appDir, ClientFile)
-	if _, err := os.Stat(clientPath); err == nil {
-		return Wiring{}, fmt.Errorf("%s/%s exists: remove it, or wire the client by hand", AppDir, ClientFile)
-	}
-	pkg, err := parseApp(appDir)
-	if err != nil {
+	if err := os.WriteFile(filepath.Join(appDir, ClientFile), source, 0o644); err != nil {
 		return Wiring{}, err
 	}
-	for _, name := range clientDecls {
-		if pkg.decls[name] {
-			return Wiring{}, fmt.Errorf("%s already declares %s, which %s declares: rename it", AppDir, name, ClientFile)
+	for _, name := range slices.Sorted(maps.Keys(p.edited)) {
+		if err := os.WriteFile(filepath.Join(appDir, name), p.edited[name], 0o644); err != nil {
+			return Wiring{}, err
 		}
 	}
-
-	source, err := renderClient(pkg, module, opts)
-	if err != nil {
-		return Wiring{}, err
-	}
-	edits, err := locate(pkg)
-	if err != nil {
-		return Wiring{}, err
-	}
-
 	result := Wiring{Client: path.Join(AppDir, ClientFile)}
-	found := !slices.ContainsFunc(edits, func(e located) bool { return !e.Found })
-	edited := map[string][]byte{}
-	if found {
-		if edited, err = apply(pkg, edits); err != nil {
-			return Wiring{}, err
-		}
-	}
-	if err := os.WriteFile(clientPath, source, 0o644); err != nil {
-		return Wiring{}, err
-	}
-	for _, name := range slices.Sorted(maps.Keys(edited)) {
-		if err := os.WriteFile(filepath.Join(appDir, name), edited[name], 0o644); err != nil {
-			return Wiring{}, err
-		}
-	}
-	for _, e := range edits {
-		if found {
+	for _, e := range p.edits {
+		if p.edited != nil {
 			result.Applied = append(result.Applied, e.Edit)
 		} else {
 			result.Left = append(result.Left, e.Edit)
 		}
 	}
 	return result, nil
+}
+
+// CheckWire returns the error [Wire] would refuse the service in dir with,
+// writing nothing, so a caller refuses the service before it writes the
+// client's own files. It returns nil when Wire would write the client
+// file, whether or not every anchor is found.
+func CheckWire(dir string) error {
+	_, err := prepare(dir)
+	return err
+}
+
+type prepared struct {
+	pkg    *appPackage
+	edits  []located
+	edited map[string][]byte
+}
+
+func prepare(dir string) (prepared, error) {
+	appDir := filepath.Join(dir, filepath.FromSlash(AppDir))
+	if _, err := os.Stat(filepath.Join(appDir, ClientFile)); err == nil {
+		return prepared{}, fmt.Errorf("%s/%s exists: remove it, or wire the client by hand", AppDir, ClientFile)
+	}
+	pkg, err := parseApp(appDir)
+	if err != nil {
+		return prepared{}, err
+	}
+	for _, name := range clientDecls {
+		if pkg.decls[name] {
+			return prepared{}, fmt.Errorf("%s already declares %s, which %s declares: rename it", AppDir, name, ClientFile)
+		}
+	}
+	edits, err := locate(pkg)
+	if err != nil {
+		return prepared{}, err
+	}
+	p := prepared{pkg: pkg, edits: edits}
+	if !slices.ContainsFunc(edits, func(e located) bool { return !e.Found }) {
+		if p.edited, err = apply(pkg, edits); err != nil {
+			return prepared{}, err
+		}
+	}
+	return p, nil
 }
 
 type appFile struct {

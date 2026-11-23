@@ -14,6 +14,7 @@ func defineDomain(g *graph.Graph, n *Nodes) {}
 
 func mountDomain(root *cli.Command, n *Nodes) {
 	root.Add(newCommand())
+	root.Add(injectCommand())
 }
 
 func newCommand() *cli.Command {
@@ -21,4 +22,11 @@ func newCommand() *cli.Command {
 		Name:    "new",
 		Summary: "Write a new web client project of one kind",
 	}).Add(standalone.Command(moduleVersion()), serviceapp.Command(moduleVersion()))
+}
+
+func injectCommand() *cli.Command {
+	return (&cli.Command{
+		Name:    "inject",
+		Summary: "Install a web client into an existing project of one kind",
+	}).Add(serviceapp.InjectCommand(moduleVersion()))
 }

@@ -5,10 +5,12 @@ import (
 	"embed"
 	"fmt"
 	"go/token"
+	"io"
 	"io/fs"
 	"os/exec"
 	"path"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/standards-lab/go-cli-sdk"
@@ -102,8 +104,9 @@ type options struct {
 // mise run install, and mise run build, run in its directory with mise -C,
 // and the service's mise run check, and exits 0. A go missing from PATH, a
 // gonew that fails, a client directory the copied template already holds
-// files in, or a template [Wire] finds an anchor missing from exits
-// nonzero naming it.
+// files in, a template [CheckWire] refuses, before the client is written,
+// or a template [Wire] finds an anchor missing from exits nonzero naming
+// it.
 func Command(version string) *cli.Command {
 	var o options
 	cmd := &cli.Command{
@@ -122,48 +125,60 @@ func Command(version string) *cli.Command {
 			if err := project.CheckDir(client); err != nil {
 				return fmt.Errorf("--client-dir %q: the copied template holds it: %w", o.clientDir, err)
 			}
-			values := Values{
-				Name: o.name, Title: o.title, Base: o.base, APIBase: o.apiBase,
-				Package: PackageName(o.clientDir), Version: version,
-			}
-			if err := project.Write(client, values, starter.Files, Files); err != nil {
+			wiring, err := o.install(version)
+			if err != nil {
 				return err
 			}
-			if err := wireTemplate(o); err != nil {
-				return err
+			if missing := missingAnchors(wiring); len(missing) > 0 {
+				return fmt.Errorf("the copied template lacks %s, where the client is wired in: report it against %s",
+					strings.Join(missing, ", "), TemplatePin)
 			}
-			mise := "mise -C " + project.ShellQuote(o.clientDir)
-			return project.WriteNextSteps(inv.Stdout, o.dir, "git init", "mise install",
-				mise+" install", mise+" run install", mise+" run build", "mise run check")
+			return o.writeNextSteps(inv.Stdout, "git init")
 		},
 	}
+	o.define(cmd)
+	return cmd
+}
+
+func (o *options) define(cmd *cli.Command) {
 	flags := cmd.Flags()
 	flags.StringVar(&o.name, "name", "", "the web client's `name` (default: the directory's name)")
 	flags.StringVar(&o.title, "title", "", "the web client's page `title` (default: the name)")
 	flags.StringVar(&o.base, "base", "/", "the absolute `path` the web client is served under")
 	flags.StringVar(&o.apiBase, "api-base", "/api/", "the `URL` of the API the web client calls")
 	flags.StringVar(&o.clientDir, "client-dir", "client", "the `path` in the service the web client is written into")
-	return cmd
 }
 
-func wireTemplate(o options) error {
-	wiring, err := Wire(o.dir, o.module, WireOptions{
+func (o *options) install(version string) (Wiring, error) {
+	if err := CheckWire(o.dir); err != nil {
+		return Wiring{}, err
+	}
+	values := Values{
+		Name: o.name, Title: o.title, Base: o.base, APIBase: o.apiBase,
+		Package: PackageName(o.clientDir), Version: version,
+	}
+	if err := project.Write(filepath.Join(o.dir, filepath.FromSlash(o.clientDir)), values, starter.Files, Files); err != nil {
+		return Wiring{}, err
+	}
+	return Wire(o.dir, o.module, WireOptions{
 		Base: o.base, Title: o.title, APIBase: o.apiBase, ClientDir: o.clientDir,
 	})
-	if err != nil {
-		return err
-	}
+}
+
+func missingAnchors(wiring Wiring) []string {
 	var missing []string
 	for _, e := range wiring.Left {
 		if !e.Found {
 			missing = append(missing, e.Anchor)
 		}
 	}
-	if len(missing) > 0 {
-		return fmt.Errorf("the copied template lacks %s, where the client is wired in: report it against %s",
-			strings.Join(missing, ", "), TemplatePin)
-	}
-	return nil
+	return missing
+}
+
+func (o *options) writeNextSteps(w io.Writer, first ...string) error {
+	mise := "mise -C " + project.ShellQuote(o.clientDir)
+	steps := slices.Concat(first, []string{"mise install", mise + " install", mise + " run install", mise + " run build", "mise run check"})
+	return project.WriteNextSteps(w, o.dir, steps...)
 }
 
 func moduleDirArgs(args []string) error {
@@ -185,6 +200,11 @@ func (o *options) validate(module, dir string) error {
 	if err := project.CheckDir(dir); err != nil {
 		return err
 	}
+	o.module = module
+	return o.parse(dir)
+}
+
+func (o *options) parse(dir string) error {
 	base, err := standalone.ParseBase(o.base)
 	if err != nil {
 		return err
@@ -193,7 +213,7 @@ func (o *options) validate(module, dir string) error {
 	if err != nil {
 		return err
 	}
-	o.module, o.dir, o.base, o.clientDir = module, dir, base, clientDir
+	o.dir, o.base, o.clientDir = dir, base, clientDir
 	if o.name == "" {
 		abs, err := filepath.Abs(dir)
 		if err != nil {

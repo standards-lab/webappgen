@@ -7,7 +7,11 @@
 // [ToolsPin] are the versions it copies and copies with; [CheckModule] is
 // the check of the written service's module path, [ParseClientDir] of the
 // directory the client is written into, and [PackageName] names the
-// client's Go package. [Wire] wires the client into the service's
-// composition root: the client file it writes, and its edits at the
-// template's anchors, applied all together or left all together.
+// client's Go package. [InjectCommand] is its leaf under inject, which
+// writes the client into an existing service, with the same flags, the
+// same writing of the client, and the same wiring. [Wire] wires the
+// client into the service's composition root: the client file it writes,
+// and its edits at the template's anchors, applied all together or left
+// all together; [CheckWire] refuses a service Wire would refuse, before
+// anything is written.
 package serviceapp
