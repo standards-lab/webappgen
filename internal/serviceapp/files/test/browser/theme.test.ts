@@ -1,13 +1,14 @@
 // The theme: a color picked in the Settings dialog's sl-settings is on the root element and stored
 // under the foundation's key at once, with no Save, and a reload keeps it; and a non-default theme
 // choice stored under that key is on the root element, and the page module's header on the page,
-// before the browser first paints. The first-paint case holds every script's fetch, and the same build with blocking="render" stripped
-// from its shell paints the defaults first: the case fails without the render-blocking modules,
-// the theme module and the page module, which the shell loads in that order.
+// before the browser first paints. The first-paint case holds every script's fetch, and the same
+// build with blocking="render" stripped from its shell paints first, before the theme is applied
+// and the page drawn: the case fails without the render-blocking modules, the theme module and the
+// page module, which the shell loads in that order.
 // A recorder, run ahead of the page's own scripts from Page.addScriptToEvaluateOnNewDocument,
 // records in window.flash the first paint, from a PerformanceObserver, and the moments data-scheme
-// lands on the root and the header in the body, from MutationObservers; every script's fetch is held DELAY ms, so a module
-// that doesn't block rendering runs after the browser has painted.
+// lands on the root and the header in the body, from MutationObservers; every script's fetch is
+// held DELAY ms, so a module that doesn't block rendering runs after the browser has painted.
 // Adapted from webappgen (1dfc795): internal/starter/files/test/browser/theme.test.ts, behind the
 // shell.
 
@@ -144,12 +145,13 @@ describe("the stored choice at first paint", () => {
   });
 
   test("without blocking=render, the page paints the defaults first: the case above can fail", async (t) => {
-    const { paint, applied, blocking } = await flash(plain, t);
-    t.diagnostic(`applied at ${applied} ms, first paint at ${paint} ms`);
+    const { paint, applied, drawn, blocking } = await flash(plain, t);
+    t.diagnostic(`applied at ${applied} ms, drawn at ${drawn} ms, first paint at ${paint} ms`);
     assert.equal(blocking, 0, "the stripped shell blocks rendering on nothing");
     assert.ok(
       applied !== null && applied > paint,
       `applied at ${applied}, first paint at ${paint}`,
     );
+    assert.ok(drawn !== null && drawn > paint, `drawn at ${drawn}, first paint at ${paint}`);
   });
 });

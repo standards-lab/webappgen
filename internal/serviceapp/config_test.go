@@ -21,11 +21,6 @@ func configFixture(t *testing.T) string {
 	return dir
 }
 
-func readConfig(t *testing.T, dir, name string) string {
-	t.Helper()
-	return read(t, filepath.Join(dir, filepath.FromSlash(name)))
-}
-
 func writeConfig(t *testing.T, dir, name, content string) {
 	t.Helper()
 	if err := os.WriteFile(filepath.Join(dir, filepath.FromSlash(name)), []byte(content), 0o644); err != nil {
@@ -58,7 +53,7 @@ func TestEditConfig_EditsTheTemplate(t *testing.T) {
 	}
 	golden := filepath.Join("testdata", "config", "template.golden")
 	for _, name := range configFiles {
-		if got, want := readConfig(t, dir, name), readConfig(t, golden, name); got != want {
+		if got, want := readFile(t, dir, name), readFile(t, golden, name); got != want {
 			t.Errorf("%s =\n%s\nwant %s:\n%s", name, got, filepath.Join(golden, name), want)
 		}
 	}
@@ -81,7 +76,7 @@ func TestEditConfig_QuotesTheClientDir(t *testing.T) {
 			`exclude_dir = ["tmp", "bin", "web/My \"UI\"/node_modules", "web/My \"UI\"/src", "web/My \"UI\"/test", "web/My \"UI\"/scripts"]`,
 		},
 	} {
-		content := readConfig(t, dir, name)
+		content := readFile(t, dir, name)
 		for _, want := range wants {
 			if !strings.Contains(content, want) {
 				t.Errorf("%s = %q, want it to hold %q", name, content, want)
@@ -163,7 +158,7 @@ func TestEditConfig_LeavesADifferingFile(t *testing.T) {
 			} else {
 				content := ""
 				if tc.file != serviceapp.AirFile {
-					content = readConfig(t, dir, tc.file)
+					content = readFile(t, dir, tc.file)
 				}
 				changed := tc.change(content)
 				if changed == content {
@@ -173,7 +168,7 @@ func TestEditConfig_LeavesADifferingFile(t *testing.T) {
 			}
 			before := ""
 			if tc.change != nil {
-				before = readConfig(t, dir, tc.file)
+				before = readFile(t, dir, tc.file)
 			}
 
 			edits, err := serviceapp.EditConfig(dir, "client")
@@ -186,7 +181,7 @@ func TestEditConfig_LeavesADifferingFile(t *testing.T) {
 				if e.Path != tc.file {
 					if !e.Applied {
 						t.Errorf("%s left: %s; want it applied", e.Path, e.Reason())
-					} else if got, want := readConfig(t, dir, e.Path), readConfig(t, golden, e.Path); got != want {
+					} else if got, want := readFile(t, dir, e.Path), readFile(t, golden, e.Path); got != want {
 						t.Errorf("%s =\n%s\nwant it as %s has it", e.Path, got, golden)
 					}
 					continue
@@ -214,7 +209,7 @@ func TestEditConfig_LeavesADifferingFile(t *testing.T) {
 				if _, err := os.Stat(filepath.Join(dir, filepath.FromSlash(tc.file))); err == nil {
 					t.Errorf("%s exists, want it still missing", tc.file)
 				}
-			} else if after := readConfig(t, dir, tc.file); after != before {
+			} else if after := readFile(t, dir, tc.file); after != before {
 				t.Errorf("%s changed:\n%s", tc.file, after)
 			}
 		})
