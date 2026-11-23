@@ -7,7 +7,7 @@ task.run_auto_install = false
 
 [tools]
 "aqua:air-verse/air" = "1.67.4"
-"github:standards-lab/claude-plugins" = { version = "0.23.0", version_prefix = "marathon/v" }
+"github:standards-lab/claude-plugins" = { version = "0.24.0", version_prefix = "marathon/v" }
 actionlint = "1.7.12"
 go = "1.27.4"
 golangci-lint = "2.15.0"
