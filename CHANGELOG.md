@@ -8,6 +8,40 @@ changelog; this one records the CLI's.
 
 ## [Unreleased]
 
+## [v0.2.0] - 2026-11-23
+
+The service-app kind: a web client inside a Go web service copied from go-web-sdk-template, which
+embeds the client's build and serves it with go-web-sdk's `NewClient`, written into a new service
+or installed into an existing one. Its `.air.toml` is adapted from herald (c697566), with a
+provenance line.
+
+### Added
+
+- The `inject` group, whose leaves install a kind's web client into an existing project.
+- `webappgen new service-app <module> <dir>`, which copies go-web-sdk-template v0.16.0 into a new
+  or empty directory as `<module>`, with gonew from golang.org/x/tools v0.53.0 run through
+  `go run`, then writes the client into it.
+- `webappgen inject service-app <service-dir>`, which writes the client into an existing
+  go-web-sdk-template service, under the module its `go.mod` declares.
+- Their flags: `--name`, `--title`, `--base`, `--api-base`, `--client-dir`, and `--install`.
+- What they write into the service: the client in `--client-dir`, built with a manifest for
+  `NewClient`, its page drawn into the shell's empty `<body>`, and its Go package, which embeds the
+  build; `internal/app/client.go`, the client's graph nodes and handler, defined and mounted from
+  `internal/app/app.go` and `internal/app/server.go`; the service's `mise.toml` tasks,
+  `client:build`, which `check`, `test`, `integration`, and `serve` depend on, `client:check`, and
+  `dev`, and its air pin; `.air.toml`, air's live reload for `dev`; and `ci.yml` steps that install
+  and build the client before the check and integration jobs run.
+- Printed edits: a service that differs from go-web-sdk-template where an edit goes keeps that
+  file as it is, and `inject` prints each edit left, then the next steps, and exits 1; under `new`,
+  a copied template that differs is reported as a bug in the template.
+- `--install` for service-app: under `new`, `mise install` and `go mod download` in the service,
+  then `mise install` and `mise run install` in the client; under `inject`, the client's two.
+- `mise run currency` reports the go-web-sdk-template and gonew pins behind their latest.
+
+### Changed
+
+- The CLI's marathon pin, 0.24.0.
+
 ## [v0.1.0] - 2026-11-23
 
 The first release: the web client CLI, with its first kind of project, `standalone`. Its CLI shape
@@ -37,5 +71,6 @@ copied file; the spike is archived and never a dependency. The module depends on
   on amd64 and arm64, and publishes `webappgen-vX.Y.Z-<os>-<arch>.tar.gz` archives and their
   `SHA256SUMS` on the GitHub release, so `mise use github:standards-lab/webappgen` installs it.
 
-[Unreleased]: https://github.com/standards-lab/webappgen/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/standards-lab/webappgen/compare/v0.2.0...HEAD
+[v0.2.0]: https://github.com/standards-lab/webappgen/compare/v0.1.0...v0.2.0
 [v0.1.0]: https://github.com/standards-lab/webappgen/releases/tag/v0.1.0
