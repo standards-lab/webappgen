@@ -6,7 +6,6 @@
 // CSS and a modulepreload for each chunk it imports, and carries the config inline, as #app-config.
 // The server is web-tooling's, on a free loopback port; its handler answers under the base, and the
 // server answers 404 for the rest.
-// Adapted from go-web-sdk (c0c8267): client.go, its manifest resolution, shell, and request paths.
 
 import { readFileSync } from "node:fs";
 import { readFile } from "node:fs/promises";

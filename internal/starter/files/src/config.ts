@@ -2,8 +2,6 @@
 // script element, when the page has one, and otherwise from config.json, fetched relative to the
 // document's base. A config that is missing, isn't JSON, or isn't an AppConfig fails, naming the
 // element or the file.
-// Adapted from spike-html-apps (2883d78): apps/pipeline/src/config.ts, with config.json beside the
-// element, and its API base alone.
 
 /** The id of the `<script type="application/json">` element a page may write the config into. */
 export const configId = "app-config";

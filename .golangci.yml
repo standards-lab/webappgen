@@ -1,7 +1,6 @@
 # golangci-lint v2 configuration, run by `mise run check`: the standard set plus nolintlint and
 # testpackage.
 # See architecture/principles/comments.md
-# Adapted from go-cli-sdk-template (a4d314c): template/.golangci.yml, run on the one module.
 version: "2"
 
 linters:

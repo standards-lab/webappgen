@@ -1,10 +1,6 @@
 # Written by webappgen (devel).
 # The project's tools and tasks.
 # See README.md
-# Adapted from spike-html-apps (2883d78): mise.toml, its Node toolchain and tasks, for one client
-# app.
-# Adapted from web-app-sdk (fbaba50): mise.toml, its pins, its browser's for every platform the CLI
-# ships for.
 [settings]
 task.run_auto_install = false
 

@@ -1,7 +1,6 @@
 // The view for a path no route matches: it says so and links back to the home view, at the base.
 // It renders into light DOM, as the home view does. Loaded on its first visit. Its link, `.`, is
 // the document's base, the home view.
-// Adapted from spike-html-apps (2883d78): apps/pipeline/src/views/not-found.ts, without Lit.
 
 /** The not-found view's tag, which the router mounts. */
 export const notFoundTag = "app-not-found";

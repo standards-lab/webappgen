@@ -1,9 +1,6 @@
 // The browser tier's reading of the app: which view a page shows, and the navigations and key
 // presses a person makes, through the DevTools Protocol. Each wait is web-tooling's page wait,
 // until, which polls an expression inside the page.
-// Adapted from spike-html-apps (2883d78): test/browser/support/app.ts, its route, mounted, reload,
-// and openWith.
-// Adapted from web-components (6052866): test/browser/shortcut-dialogs.test.ts, its press.
 
 import { until } from "@standards-lab/web-tooling/browser.js";
 import type { Browser, Page } from "@standards-lab/web-tooling/browser.js";

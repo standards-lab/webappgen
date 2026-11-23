@@ -1,5 +1,3 @@
-// Adapted from go-cli-sdk-template (a4d314c): template/internal/apptest/apptest.go, renamed webappgen.
-
 package apptest
 
 import (

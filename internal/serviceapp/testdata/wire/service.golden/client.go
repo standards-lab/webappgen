@@ -1,5 +1,3 @@
-// Adapted from spike-html-apps (2883d78): internal/app/client.go, in the template's node style.
-
 package app
 
 import (

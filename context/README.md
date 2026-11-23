@@ -9,9 +9,7 @@ served by go-web-sdk's `NewClient` (v0.2.0).
 It is the root Go module `github.com/standards-lab/webappgen`, released by a plain `vX.Y.Z` tag
 as binaries for Linux and macOS; its first release is v0.1.0. Its goals live in the coordinator's
 roadmap (`standards-lab/roadmap/index.toml`, v1.client.stack), and its strategy is
-`standards-lab/context/web-client.md`. Its CLI shape is copied from go-cli-sdk-template and its
-starter app from spike-html-apps' app, with a provenance line on every copied file; the spike is
-archived and never a dependency. [README.md](../README.md) documents the flags, the written
+`standards-lab/context/web-client.md`. [README.md](../README.md) documents the flags, the written
 project's tasks, deployment, and the contributor workflow.
 
 ## Capability map
@@ -44,14 +42,5 @@ project's tasks, deployment, and the contributor workflow.
 
 ## Provenance
 
-The JSON and generated files, which take no comment, have their provenance here; every other
-copied file carries its own line.
-
-- `internal/starter/files/.prettierrc.json`: from spike-html-apps (2883d78) `.prettierrc.json`,
-  byte for byte.
-- `internal/starter/files/package.json.tmpl`: adapted from spike-html-apps (2883d78)
-  `package.json` and `test/consumers/app/package.json`, moved onto the standards-lab layers.
-- `internal/standalone/files/public/config.json.tmpl`: new.
-- `internal/starter/files/pnpm-lock.yaml`: produced by `pnpm install` (pnpm 12.21.0).
-- `internal/standalone/testdata/README.md.golden` and `mise.toml.golden`: generated, the
-  starter's templates as the standalone kind writes them for `my-app`, byte for byte.
+The sources webappgen was built from are in the workspace's
+[references catalog](https://github.com/standards-lab/org/blob/main/references.md).

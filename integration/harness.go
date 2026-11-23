@@ -1,6 +1,3 @@
-// Adapted from go-cli-sdk-template (a4d314c): template/integration/harness.go, renamed webappgen,
-// with Tree.
-
 package integration
 
 import (

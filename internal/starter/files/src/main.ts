@@ -7,7 +7,6 @@
 // not-found view at any other path. The router's base is the document's <base href>; links are
 // relative to it. Each view loads on its first visit. A config the reader refuses shows, in place
 // of a view, as an alert naming the element or the file.
-// Adapted from spike-html-apps (2883d78): apps/pipeline/src/main.ts, its config and router alone.
 
 import "@standards-lab/web-foundation/page-full.css";
 import "@standards-lab/web-foundation/glyph-button.css";

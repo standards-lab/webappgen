@@ -2,8 +2,6 @@
 # Fails naming mise run install when a tool a task needs is missing: the node_modules tooling, and
 # the layers the build reads, each at its release tag; and with `browser`, the pinned
 # chrome-headless-shell.
-# Adapted from spike-html-apps (2883d78): scripts/preflight.sh, with web-components' check of the
-# packages the build reads, and web-tooling's (v0.1.0) of the browser.
 #
 # The browser's version is checked against its pin: mise caches downloads by checksum, so a version
 # bumped without its sha256 installs the old build.

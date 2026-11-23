@@ -9,8 +9,6 @@
 // records in window.flash the first paint, from a PerformanceObserver, and the moments data-scheme
 // lands on the root and the header in the body, from MutationObservers; every script's fetch is
 // held DELAY ms, so a module that doesn't block rendering runs after the browser has painted.
-// Adapted from webappgen (1dfc795): internal/starter/files/test/browser/theme.test.ts, behind the
-// shell.
 
 import assert from "node:assert/strict";
 import { after, before, describe, test } from "node:test";

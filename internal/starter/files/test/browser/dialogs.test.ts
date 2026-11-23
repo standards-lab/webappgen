@@ -3,7 +3,6 @@
 // lists both keys in its sl-shortcuts, and Settings, wide, lists every built-in profile in its
 // sl-settings. Escape, and each dialog's Close, close it with no script of the app's, and focus
 // returns to the button that opened it, whether focused before its key or clicked.
-// Adapted from web-components (6052866): test/browser/shortcut-dialogs.test.ts, on the app's page.
 
 import assert from "node:assert/strict";
 import { after, before, test } from "node:test";

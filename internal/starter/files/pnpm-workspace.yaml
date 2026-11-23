@@ -1,4 +1,3 @@
 # pnpm's settings for the install (mise run install).
 # See README.md
-# Adapted from spike-html-apps (2883d78): pnpm-workspace.yaml, without the import plugins' build.
 minimumReleaseAge: 0

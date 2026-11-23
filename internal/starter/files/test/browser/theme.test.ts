@@ -7,7 +7,6 @@
 // records in window.flash the first paint, from a PerformanceObserver, and the moment data-scheme
 // lands on the root, from a MutationObserver; every script's fetch is held DELAY ms, so a module
 // that doesn't block rendering runs after the browser has painted.
-// Adapted from spike-html-apps (2883d78): test/browser/theme.test.ts, on the full entry.
 
 import assert from "node:assert/strict";
 import { after, before, describe, test } from "node:test";

@@ -1,5 +1,4 @@
 # Prettier's scope: every file ignored, then every directory and the code, JSON, and CSS let back in.
-# From spike-html-apps (2883d78): .prettierignore.
 *
 !*/
 !*.js

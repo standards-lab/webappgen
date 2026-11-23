@@ -1,5 +1,3 @@
-// From go-cli-sdk-template (a4d314c): template/internal/apptest/doc.go.
-
 // Package apptest holds the fixtures internal/app's tests share for running
 // the program over the composition [app.App] publishes: its graph and its
 // nodes. A test builds its App with [app.New] and applies the fixtures to

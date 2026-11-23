@@ -1,8 +1,6 @@
 // The page's glyphs: the page module draws each from web-icons' module, the very svg it exports, so
 // the page shows question-16 on Help, gear-16 on Settings, and x-16 on each dialog's Close, and
 // writes no data-icon marker.
-// Adapted from webappgen (1dfc795): internal/starter/files/test/browser/glyphs.test.ts, on the
-// build alone.
 
 import assert from "node:assert/strict";
 import { after, before, test } from "node:test";

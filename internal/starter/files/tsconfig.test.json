@@ -1,5 +1,4 @@
 // The tests' and the scripts' type-check (mise run types:test), against node's types.
-// Adapted from spike-html-apps (2883d78): tsconfig.test.json, for one client app.
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {

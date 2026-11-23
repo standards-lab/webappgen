@@ -229,7 +229,6 @@ func planAir(dir, clientDir string) (ConfigEdit, string, error) {
 		excludes[i] = tomlString(e)
 	}
 	air := "# The service's live reload under air, which mise run dev runs.\n" +
-		"# Adapted from herald (c697566): .air.toml, for the service's server and its web client.\n" +
 		"root = \".\"\n" +
 		"tmp_dir = \"tmp\"\n" +
 		"\n" +

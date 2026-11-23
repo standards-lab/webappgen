@@ -1,5 +1,3 @@
-// From go-web-service (31b92a4): internal/app/server.go
-
 package app
 
 import (
