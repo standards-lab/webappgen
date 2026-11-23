@@ -2,9 +2,8 @@
 # Fails naming mise run install when a tool a task needs is missing: each tool mise.toml pins; the
 # module's requirements in the module cache, which the build reads with the network off; the
 # service-app kind's pins in the module cache, which the integration tier's service-app run reads
-# with the network off; and the
-# pnpm store the integration tier's full proof installs a written project from, filled from the
-# starter's lockfile as it stands.
+# with the network off; and the pnpm store the integration tier's full proof installs a written
+# project from, filled from the starter's lockfile as it stands.
 # Adapted from web-app-sdk (fbaba50): scripts/preflight.sh, for the CLI's tools and go.mod.
 set -euo pipefail
 cd "$(dirname "$0")/.."

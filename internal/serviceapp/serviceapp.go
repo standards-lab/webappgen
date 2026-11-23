@@ -195,9 +195,6 @@ func missingAnchors(wiring Wiring) []string {
 	return missing
 }
 
-// installSteps returns the steps --install runs: with service, mise
-// install and go mod download in the service, then, either way, mise
-// install and mise run install in the client, through mise -C.
 func (o *options) installSteps(service bool) []project.Step {
 	var steps []project.Step
 	if service {

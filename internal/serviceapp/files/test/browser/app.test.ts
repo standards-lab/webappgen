@@ -3,8 +3,8 @@
 // and no config.json fetched; the not-found view at any other path, its link back home taken by the
 // router; and a deep link and a reload, which the service answers with the shell, reach the right
 // view. The page module draws the foundation's application page, and its header and view sit inside
-// the layout sheet's gutters, off the viewport's edges. Every asset loads, under the base, which the
-// document's base URI, the build's relative base, and the router's agree on.
+// the layout sheet's gutters, off the viewport's edges. Every asset loads, under the base, which
+// the document's base URI, the build's relative base, and the router's agree on.
 // Adapted from webappgen (1dfc795): internal/starter/files/test/browser/app.test.ts, behind the
 // shell.
 

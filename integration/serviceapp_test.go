@@ -316,8 +316,6 @@ func TestNewServiceApp_WritesThenChecks(t *testing.T) {
 	}
 }
 
-// wantSteps checks that stderr names each of steps as run in dir, in order,
-// after the line first.
 func wantSteps(t *testing.T, stderr, dir, first string, steps ...string) {
 	t.Helper()
 	rest := stderr
@@ -334,8 +332,6 @@ func wantSteps(t *testing.T, stderr, dir, first string, steps ...string) {
 	}
 }
 
-// fakeMise returns a PATH of the go running the tests and a mise that
-// succeeds but for the step whose arguments are failArgs, which exits 3.
 func fakeMise(t *testing.T, failArgs string) string {
 	t.Helper()
 	bin := t.TempDir()

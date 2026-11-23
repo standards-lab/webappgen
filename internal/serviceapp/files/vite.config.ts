@@ -1,9 +1,5 @@
-// The client's build (mise run build): the entry, theme, and page modules, each a Vite input, into
-// dist/, with the manifest go-web-sdk's NewClient reads to name their scripts and CSS in the shell
-// it renders. The service writes the HTML, so there is no index.html and no public directory. The
-// base is relative, so the build is served under any mount: the shell's <base href> names it, and
-// every asset and chunk resolves against it. The theme and page modules are the ones the shell
-// loads render-blocking ahead of the entry, the Go package's RenderBlocking.
+// The client's build (mise run build): the entry, theme, and page modules into dist/, with the
+// manifest go-web-sdk's NewClient renders the shell from.
 // See README.md
 // Adapted from spike-html-apps (2883d78): vite.config.ts, its three module inputs, for one client
 // app.

@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Prints `<where>: <item> <pin> -> <latest>` for the go directive's minor and any toolchain line,
 # each direct Go requirement, each module the service-app kind pins, each mise tool, and each
-# GitHub Actions pin behind its latest, and exits 1 if any; prints nothing when all are current. Reads the network and writes nothing;
-# diagnostics go to stderr.
+# GitHub Actions pin behind its latest, and exits 1 if any; prints nothing when all are current.
+# Reads the network and writes nothing; diagnostics go to stderr.
 # Adapted from go-cli-sdk-template (a4d314c): template/scripts/currency.sh, on one module, with a
 # toolchain line reported.
 # Adapted from web-app-sdk (fbaba50): scripts/currency.sh, its report collected and printed once.
@@ -12,11 +12,10 @@
 # nothing. The go directive follows the current Go minor, with no toolchain line, as the mise pin
 # selects the toolchain. Go requirements are checked within their major. The service-app kind's
 # pins, its template and gonew's x/tools, are read from their constants by scripts/service-pins.sh
-# and checked against their modules' latest. The mise tools include
-# the starter's shared pins, so a tool reported here trails in a written project too; mise runs at
-# error level, as it warns on every run that a GitHub release has no assets. Each workflow's
-# actions, the release workflow's included, are checked against their repositories' latest
-# releases.
+# and checked against their modules' latest. The mise tools include the starter's shared pins, so
+# a tool reported here trails in a written project too; mise runs at error level, as it warns on
+# every run that a GitHub release has no assets. Each workflow's actions, the release workflow's
+# included, are checked against their repositories' latest releases.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 export GOWORK=off

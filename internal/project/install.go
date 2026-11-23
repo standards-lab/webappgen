@@ -37,10 +37,11 @@ var installHints = map[string]string{
 	"go":   "Go (https://go.dev/dl)",
 }
 
-// Install runs steps, in order, in the project written into dir, the first
-// of the next steps a run prints without it. It writes a line naming each
-// step to w before running it, and gives the step w for both its output
-// streams, as the steps' output is progress, not the command's result.
+// Install runs steps, in order, in the project written into dir: the steps
+// a run without --install prints among its next steps. It writes a line
+// naming each step to w before running it, and gives the step w for both
+// its output streams, as the steps' output is progress, not the command's
+// result.
 // Each step reads the environment Install was given, so a caller's MISE_,
 // Go, and pnpm settings, such as offline modes, reach the steps.
 //
