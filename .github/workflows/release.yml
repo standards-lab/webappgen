@@ -44,7 +44,7 @@ jobs:
             exit 1
           fi
 
-      - uses: jdx/mise-action@v5.2.10
+      - uses: jdx/mise-action@v5.3.0
 
       - name: mise run install
         run: mise run install

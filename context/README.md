@@ -15,11 +15,16 @@ project's tasks, deployment, and the contributor workflow.
 
 ## Capability map
 
-- **CLI**: `version`, and `new` with one leaf per kind of app. Usage errors name the fix.
-- **Standalone kind**: `new standalone <dir>` writes the starter, then the standalone kind's own
-  files over it (`index.html`, `vite.config.ts`, `public/config.json`). `--install` then runs
-  `mise install` and `mise run install` in the project.
-- **The written project**:
+- **CLI** (built): [`internal/app`](../internal/app/): `version`, and `new` with one leaf per
+  kind of app. Usage errors name the fix.
+- **Standalone kind** (built): [`internal/standalone`](../internal/standalone/): `new standalone
+  <dir>` writes the starter, then the standalone kind's own files over it (`index.html`,
+  `vite.config.ts`, `public/config.json`). `--install` then runs `mise install` and
+  `mise run install` in the project.
+- **Embedded kinds** (planned): `new new-service` and `new existing-service` write a client
+  inside a new or an existing Go web service, served by go-web-sdk's `NewClient` (v0.2.0).
+- **The written project** (built): [`internal/starter/files`](../internal/starter/files/), what
+  `new standalone` writes.
   - It takes each layer by an exact `github:` release tag, with a committed lockfile.
   - It pins chrome-headless-shell for linux-x64, linux-arm64, mac-x64, and mac-arm64.
   - Its check runs lint, types, the unit tier, the build, and a size report with no budget, then
@@ -35,10 +40,12 @@ project's tasks, deployment, and the contributor workflow.
   - Its router mounts a home view and a not-found view.
   - Its config reader prefers the page's `#app-config` element and otherwise fetches
     `config.json`.
-- **The full proof**: the root `mise run install` warms `.cache/pnpm-store`, and the integration
-  tier writes a project with `--install` offline and runs the written project's check.
-- **Release**: a tag on main triggers `release.yml`, which runs `scripts/pack.sh` to build four
-  archives and `SHA256SUMS`, attaches them to a draft release, then publishes it.
+- **The full proof** (built): [`integration`](../integration/): the root `mise run install`
+  warms `.cache/pnpm-store`, and the integration tier writes a project with `--install` offline
+  and runs the written project's check.
+- **Release** (built): [`release.yml`](../.github/workflows/release.yml): a tag on main
+  triggers the workflow, which runs `scripts/pack.sh` to build four archives and `SHA256SUMS`,
+  attaches them to a draft release, then publishes it.
 
 ## Facts the code relies on
 

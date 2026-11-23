@@ -9,6 +9,7 @@ task.run_auto_install = false
 # entry as it writes it (starter_test.go holds them equal), so the integration tier's full proof
 # installs and checks a written project with no network.
 [tools]
+"github:standards-lab/claude-plugins" = { version = "0.23.0", version_prefix = "marathon/v" }
 actionlint = "1.7.12"
 go = "1.27.4"
 golangci-lint = "2.15.0"
@@ -62,8 +63,8 @@ go mod tidy -diff
 '''
 
 [tasks.lint]
-description = "Run the linters: golangci-lint, shellcheck, and actionlint"
-depends = ["lint:go", "lint:shell", "lint:workflows"]
+description = "Run the linters: golangci-lint, shellcheck, actionlint, lint-context, and lint-references"
+depends = ["lint:go", "lint:shell", "lint:workflows", "lint:context"]
 
 [tasks."lint:go"]
 description = "Lint the Go source with golangci-lint, the integration suite included"
@@ -81,6 +82,10 @@ description = "Lint the GitHub Actions workflows with actionlint"
 depends = ["preflight"]
 run = "actionlint"
 
+[tasks."lint:context"]
+description = "Lint the context and every reference with marathon's lint-context and lint-references"
+run = "scripts/lint-marathon.sh"
+
 [tasks."test:unit"]
 description = "Run the unit tier"
 depends = ["preflight"]
@@ -95,7 +100,7 @@ depends = ["preflight"]
 run = "go test -race -count=1 -tags integration ./integration/"
 
 [tasks.check]
-description = "Run every check: vet, lint, and the unit and integration tiers; reads no network; writes nothing"
+description = "Run every check: vet, lint (lint-context and lint-references among it), and the unit and integration tiers; reads no network; writes nothing"
 depends = ["vet", "lint", "test:unit", "test:integration"]
 
 [tasks.fmt]
