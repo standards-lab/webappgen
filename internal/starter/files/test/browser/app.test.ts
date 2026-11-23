@@ -90,7 +90,6 @@ test("the base shows the home view, with the config's API base", async (t) => {
 test("the application page's header and view sit inside the layout's gutters", async (t) => {
   const { page } = await open(app.base, t);
   await mounted(page, "app-home");
-  assert.equal(await page.evaluate("document.body.className"), "page-app");
   const gutters: Record<string, { left: number; right: number }> = await page.evaluate(`
     Object.fromEntries(["header h1", "header .header-actions", "app-home h2"].map((selector) => {
       const box = document.querySelector(selector).getBoundingClientRect();
@@ -100,6 +99,11 @@ test("the application page's header and view sit inside the layout's gutters", a
     assert.ok(left > 0, `${selector} is flush against the left edge`);
     assert.ok(right > 0, `${selector} is flush against the right edge`);
   }
+  const main: { left: number; foot: number } = await page.evaluate(`(() => {
+    const box = document.querySelector("main").getBoundingClientRect();
+    return { left: box.left, foot: window.innerHeight - box.bottom };
+  })()`);
+  assert.equal(main.foot, main.left, "<main> fills the screen to one gutter above its foot");
 });
 
 test("a deep link to a path no route matches shows the not-found view, and a reload keeps it", async (t) => {

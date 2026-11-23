@@ -16,8 +16,8 @@ import { serveBuild } from "./support/build.ts";
 import type { Served } from "./support/build.ts";
 
 const DIALOGS = [
-  { id: "help", key: "?", name: "Help", width: "dialog-fit" },
-  { id: "settings", key: "s", name: "Settings", width: "dialog-wide" },
+  { id: "help", key: "?", name: "Help", width: "fit" },
+  { id: "settings", key: "s", name: "Settings", width: "wide" },
 ] as const;
 
 type Dialog = (typeof DIALOGS)[number];
@@ -67,22 +67,28 @@ async function open(t: { after(fn: () => Promise<void>): void }): Promise<Page> 
   return page;
 }
 
-test("each header button names its dialog, shows its key, and opens a dialog of its width", async (t) => {
+test("each header button shows its key, and opens Help fit to its content and Settings wider", async (t) => {
   const page = await open(t);
   for (const dialog of DIALOGS) {
-    const read = await page.evaluate(`(() => {
-      const button = ${opener(dialog)};
-      return {
-        label: button.getAttribute("aria-label"),
-        kbd: button.querySelector("kbd").textContent,
-        classes: [...document.querySelector("#${dialog.id}").classList],
-      };
-    })()`);
-    assert.deepEqual(
-      read,
-      { label: dialog.name, kbd: dialog.key.toUpperCase(), classes: [dialog.width] },
+    assert.equal(
+      await page.evaluate(`${opener(dialog)}.innerText.trim()`),
+      dialog.key.toUpperCase(),
       dialog.name,
     );
+    await press(page, dialog.key);
+    await until(page, `document.querySelector("#${dialog.id}").open`);
+    const { width, fit }: { width: number; fit: number } = await page.evaluate(`(() => {
+      const dialog = document.querySelector("#${dialog.id}");
+      const width = dialog.getBoundingClientRect().width;
+      dialog.style.inlineSize = "fit-content";
+      const fit = dialog.getBoundingClientRect().width;
+      dialog.style.inlineSize = "";
+      return { width, fit };
+    })()`);
+    if (dialog.width === "fit") assert.equal(width, fit, `${dialog.name} fits its content`);
+    else assert.ok(width > fit, `${dialog.name}, ${width}px, is wider than its content, ${fit}px`);
+    await press(page, "Escape");
+    await until(page, `!document.querySelector("#${dialog.id}").open`);
   }
 });
 
@@ -110,7 +116,7 @@ test("each opener clicked opens its dialog, whose Close shows Esc, closes it, an
   for (const dialog of DIALOGS) {
     await click(page, `body > header [commandfor="${dialog.id}"]`);
     await until(page, `document.querySelector("#${dialog.id}").open`);
-    assert.equal(await page.evaluate(`${closer(dialog)}.querySelector("kbd").textContent`), "Esc");
+    assert.equal(await page.evaluate(`${closer(dialog)}.innerText.trim()`), "Esc");
     await page.evaluate(`${closer(dialog)}.click()`);
     await until(page, `!document.querySelector("#${dialog.id}").open`);
     assert.equal((await shown(page, dialog)).focus, "opener", dialog.name);
