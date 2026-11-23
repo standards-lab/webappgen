@@ -15,8 +15,6 @@ type values struct {
 	Name, Title string
 }
 
-// read returns the file at name under dir, failing the test when there is
-// none.
 func read(t *testing.T, dir, name string) string {
 	t.Helper()
 	b, err := os.ReadFile(filepath.Join(dir, filepath.FromSlash(name)))
@@ -26,7 +24,6 @@ func read(t *testing.T, dir, name string) string {
 	return string(b)
 }
 
-// tree returns the files under dir, slash-separated and sorted.
 func tree(t *testing.T, dir string) []string {
 	t.Helper()
 	var names []string
@@ -131,8 +128,6 @@ func TestWrite_Modes(t *testing.T) {
 	}
 }
 
-// A template that fails writes nothing, its siblings that render included,
-// and leaves a directory that didn't exist absent.
 func TestWrite_FailedTemplateWritesNothing(t *testing.T) {
 	for name, text := range map[string]string{
 		"unknown field": "{{.Missing}}",

@@ -11,7 +11,6 @@ import type { ConfigPage, Fetch } from "../../src/config.ts";
 const BASE = "http://127.0.0.1:8080/app/";
 const FILE = `config.json (${BASE}config.json)`;
 
-/** A page with the base, and #app-config when `element` is given: its type and its text. */
 function page(element?: { type: string | null; text: string }): ConfigPage {
   return {
     baseURI: BASE,
@@ -25,7 +24,6 @@ function page(element?: { type: string | null; text: string }): ConfigPage {
   };
 }
 
-/** A fetch that answers every URL with the status and the body, recording the URLs asked for. */
 function answering(status: number, body: string): Fetch & { urls: string[] } {
   const urls: string[] = [];
   const load = async (url: string) => {
@@ -35,10 +33,8 @@ function answering(status: number, body: string): Fetch & { urls: string[] } {
   return Object.assign(load, { urls });
 }
 
-/** The text as a RegExp source that matches it alone. */
 const escape = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
-/** A fetch that fails, as fetch does on a network error. */
 const unreachable: Fetch = async () => {
   throw new TypeError("fetch failed");
 };

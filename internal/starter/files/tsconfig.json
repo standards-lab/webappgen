@@ -1,8 +1,5 @@
-// mise run types:src: tsc type-checks the app in src/, its Vite config, and eslint.config.js as
-// JSDoc-checked JavaScript, without emitting: Vite builds the app. The suite and the scripts run on
-// node, and tsconfig.test.json checks them against node's types. types names the foundation's
-// ambient *.css declaration, so the app's stylesheet imports resolve. skipLibCheck: the
-// declarations the ESLint plugins ship name types they don't install.
+// The app's type-check (mise run types:src): src/, vite.config.ts, and eslint.config.js.
+// See README.md
 // Adapted from spike-html-apps (2883d78): tsconfig.json, on @standards-lab/web-foundation, for one
 // client app.
 {

@@ -9,7 +9,9 @@
 # the tree is clean, a pseudo-version or +dirty otherwise, so the version check also refuses a
 # build from any other commit or a dirty tree. Each binary's stamped version is read with go
 # version -m, which reads any target's binary; the one the host can run is also run, so its
-# version command's output is checked too.
+# version command's output is checked too. Every binary is built and checked before any archive is
+# written, so no build sees an archive under an outdir inside the checkout as an untracked file,
+# which go build stamps as +dirty.
 set -euo pipefail
 
 if [[ $# -ne 2 ]]; then
@@ -30,14 +32,11 @@ work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT
 targets=(linux/amd64 linux/arm64 darwin/amd64 darwin/arm64)
 
-# Every binary is built and checked before any archive is written, so no build sees an archive
-# under an outdir inside the checkout as an untracked file, which go build stamps as +dirty.
 for target in "${targets[@]}"; do
   dir=$work/${target/\//-}
   mkdir "$dir"
   (cd "$root" && GOOS=${target%/*} GOARCH=${target#*/} go build -trimpath -o "$dir/webappgen" ./cmd/webappgen)
 
-  # The mod line reads `mod <path> <version> [<sum>]`.
   stamped=$(go version -m "$dir/webappgen" | awk '$1 == "mod" { print $3 }')
   if [[ $stamped != "$tag" ]]; then
     echo "pack: the $target binary's version is ${stamped:-none}, not $tag" >&2

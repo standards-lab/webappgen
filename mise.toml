@@ -1,13 +1,10 @@
+# The CLI's tools and tasks.
+# See README.md
 # Adapted from go-cli-sdk-template (a4d314c): template/mise.toml, on one module.
 # Adapted from web-app-sdk (fbaba50): mise.toml, its settings, preflight, install, and lint tasks.
-# Tasks never install a missing tool; mise run install is the one task that reads the network.
 [settings]
 task.run_auto_install = false
 
-# The CLI's toolchain, and the toolchain of the project it writes: node, pnpm, shellcheck,
-# typescript-go, and chrome-headless-shell are internal/starter/files/mise.toml.tmpl's pins, each
-# entry as it writes it (starter_test.go holds them equal), so the integration tier's full proof
-# installs and checks a written project with no network.
 [tools]
 "github:standards-lab/claude-plugins" = { version = "0.23.0", version_prefix = "marathon/v" }
 actionlint = "1.7.12"
@@ -19,8 +16,6 @@ pnpm = "12.21.0"
 shellcheck = "0.11.0"
 "github:microsoft/typescript-go" = { version = "7.0.2", version_prefix = "typescript/v", bin_path = "package/lib" }
 
-# Chrome for Testing publishes no checksums: take the sha256 and size from each platform's download
-# by hand at each bump, the starter's with them.
 [tools."http:chrome-headless-shell"]
 version = "158.0.8127.36"
 version_list_url = "https://googlechromelabs.github.io/chrome-for-testing/last-known-good-versions.json"
@@ -32,7 +27,6 @@ linux-arm64 = { url = "https://storage.googleapis.com/chrome-for-testing-public/
 macos-x64 = { url = "https://storage.googleapis.com/chrome-for-testing-public/{{ version }}/mac-x64/chrome-headless-shell-mac-x64.zip", checksum = "sha256:e0c5d07d8f5bcc5bdd5ef370e7daf3770856b585fcc9eecf441c7e3bb2e3d1cf", size = "112306247" }
 macos-arm64 = { url = "https://storage.googleapis.com/chrome-for-testing-public/{{ version }}/mac-arm64/chrome-headless-shell-mac-arm64.zip", checksum = "sha256:c24d40a3786322ff3a5e3ac6eed162226cbaf07ebe468715407827226b0f8897", size = "105057133" }
 
-# The module is built alone, never in a workspace a parent directory holds.
 [env]
 GOWORK = "off"
 
@@ -41,14 +35,12 @@ description = "Fail naming mise run install when a tool or module the tasks need
 hide = true
 run = "scripts/preflight.sh"
 
-# The pnpm store is the full proof's: a written project installs its packages from it, offline.
 [tasks.install]
 description = "Install the pins, the module's requirements, and the starter's packages into .cache/pnpm-store; reads the network"
 run = ["mise install", "go mod download", "scripts/fetch-store.sh"]
 
-# vet reads the integration suite too, so it compiles and lints with the rest.
 [tasks.vet]
-description = "Build, vet, and check the format, fixes, and go.mod; writes nothing"
+description = "Build, vet, and check the format, fixes, and go.mod, the integration suite included; writes nothing"
 depends = ["preflight"]
 run = '''
 set -eu
@@ -76,9 +68,8 @@ description = "Shellcheck the scripts"
 depends = ["preflight"]
 run = "shellcheck scripts/*.sh"
 
-# actionlint shellchecks each run: block too, with the shellcheck pinned above.
 [tasks."lint:workflows"]
-description = "Lint the GitHub Actions workflows with actionlint"
+description = "Lint the GitHub Actions workflows with actionlint, each run: block shellchecked"
 depends = ["preflight"]
 run = "actionlint"
 
@@ -91,9 +82,6 @@ description = "Run the unit tier"
 depends = ["preflight"]
 run = "go test -race ./..."
 
-# The integration tier runs the built CLI as a subprocess, one shot at a time. Its full proof
-# writes a project with --install, offline from the pins and .cache/pnpm-store, and runs the
-# project's own check.
 [tasks."test:integration"]
 description = "Run the integration tier against the built CLI, the full proof of a written project included"
 depends = ["preflight"]

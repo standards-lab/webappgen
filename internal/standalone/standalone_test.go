@@ -7,8 +7,6 @@ import (
 	"github.com/standards-lab/webappgen/internal/standalone"
 )
 
-// The kind embeds only what git tracks in files/: never node_modules or a
-// build a demo run left there.
 func TestFiles_Tracked(t *testing.T) {
 	projecttest.CheckTracked(t, standalone.Files, "files")
 }
@@ -33,8 +31,6 @@ func TestParseBase_Accepts(t *testing.T) {
 	}
 }
 
-// Each refusal names the flag, the value, and the fix: what to give
-// instead.
 func TestParseBase_Refuses(t *testing.T) {
 	for base, want := range map[string]string{
 		"":           `--base "" doesn't begin with "/": give an absolute path, such as /`,

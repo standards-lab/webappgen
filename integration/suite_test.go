@@ -10,7 +10,4 @@ import (
 	"github.com/standards-lab/webappgen/integration"
 )
 
-// The suite's TestMain builds the program once for the run. The unit tier
-// never enters here: without the tag the harness type-checks and needs no
-// binary.
 func TestMain(m *testing.M) { integration.Main(m) }

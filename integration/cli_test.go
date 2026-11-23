@@ -14,11 +14,6 @@ import (
 	"github.com/standards-lab/webappgen/integration"
 )
 
-// The command tree as a running binary: main hands the program its
-// arguments and its process streams, and exits with the code the run
-// returns. The kinds' leaves take their own cases, in new_test.go.
-
-// version prints the main module's version, one line, to stdout.
 func TestCLI_Version(t *testing.T) {
 	res := integration.Run(t, "version")
 
@@ -34,8 +29,6 @@ func TestCLI_Version(t *testing.T) {
 	}
 }
 
-// The root's help, asked for or given by no command at all, exits with the
-// usage code on stdout and lists every command.
 func TestCLI_RootHelp(t *testing.T) {
 	for _, args := range [][]string{nil, {"--help"}, {"-h"}} {
 		t.Run(strings.Join(args, " "), func(t *testing.T) {
@@ -56,8 +49,6 @@ func TestCLI_RootHelp(t *testing.T) {
 	}
 }
 
-// new, run alone or asked for its help, lists its kind leaves on stdout
-// with the usage code.
 func TestCLI_NewListsKinds(t *testing.T) {
 	for _, args := range [][]string{{"new"}, {"new", "--help"}} {
 		t.Run(strings.Join(args, " "), func(t *testing.T) {
@@ -76,8 +67,6 @@ func TestCLI_NewListsKinds(t *testing.T) {
 	}
 }
 
-// An unknown command is a usage error: the usage code, and the error and
-// usage on stderr alone.
 func TestCLI_UnknownCommand(t *testing.T) {
 	for _, tc := range []struct {
 		args []string

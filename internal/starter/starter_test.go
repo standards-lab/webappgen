@@ -13,17 +13,10 @@ import (
 	"github.com/standards-lab/webappgen/internal/starter"
 )
 
-// The starter embeds only what git tracks in files/: never node_modules or
-// a build a demo run left there.
 func TestFiles_Tracked(t *testing.T) {
 	projecttest.CheckTracked(t, starter.Files, "files")
 }
 
-// toolPins returns each entry of a mise.toml's tool tables, [tools] and
-// every [tools."<tool>"...] table, keyed by its table and key, with its
-// value as written, so one tool's whole pin compares: its version, its
-// options, and, for an http: tool, every platform's url, checksum, and
-// size. It reads the one-line entries mise.toml holds, no more of TOML.
 func toolPins(config string) map[string]string {
 	pins := map[string]string{}
 	var table string
@@ -41,11 +34,6 @@ func toolPins(config string) map[string]string {
 	return pins
 }
 
-// Every tool the starter's mise.toml pins, the CLI's own root mise.toml
-// pins the same: each entry the starter writes for it, rendered, equals the
-// root's, so the root's mise install installs every tool a written project
-// installs, and the integration tier's full proof installs one offline.
-// The root may pin tools the starter doesn't, such as go.
 func TestFiles_PinsTheCLIsTools(t *testing.T) {
 	dir := t.TempDir()
 	values := struct{ Name, Version string }{Name: "my-app", Version: "(devel)"}

@@ -15,7 +15,19 @@
 //   - domain.go: defineDomain and mountDomain, the domain services (none)
 //     and the new command, whose leaves are the kinds of project, each
 //     its own package, such as internal/standalone;
-//   - version.go: the version command, which declares no nodes.
+//   - version.go: the version command, which declares no nodes and prints
+//     the main module's version, or (devel) when the binary carries none, as
+//     under go test.
+//
+// envPrefix, in infrastructure.go, is the single constant every WEBAPPGEN_
+// variable name derives from; go-core's config convention composes the
+// rest, such as WEBAPPGEN_SHUTDOWN_TIMEOUT. Every infrastructure value is
+// read or constructed in its node's constructor, which runs only when a
+// Build reaches the node, so configuration is read only for a command that
+// declares a node, never in [New]. A service whose value implements
+// lifecycle.Subsystem takes part in startup and shutdown through its own
+// methods, and its constructor opens nothing: connectivity belongs to its
+// Start, so a failed Build leaks no connections.
 //
 // [Nodes] holds one handle per node: each define function fills its own
 // part of one Nodes value, and its constructors read the lower layers'

@@ -17,7 +17,6 @@ import { click, mounted, openWith, reload, route } from "./support/app.ts";
 import { DIST, serveBuild } from "./support/build.ts";
 import type { Served } from "./support/build.ts";
 
-/** The API base the build's config.json, from public/, holds. */
 const apiBase: string = JSON.parse(readFileSync(`${DIST}/config.json`, "utf8")).apiBase;
 
 let browser: Browser;
@@ -32,14 +31,12 @@ after(async () => {
   await app?.stop();
 });
 
-/** A page with every response and failed load its network log records, from the first request. */
 interface Logged {
   page: Page;
   responses: { url: string; status: number }[];
   failures: string[];
 }
 
-/** Opens `path`, under the app's origin, logging its network; closed by the test's `t.after`. */
 async function open(path: string, t: { after(fn: () => Promise<void>): void }): Promise<Logged> {
   const responses: Logged["responses"] = [];
   const failures: string[] = [];
@@ -59,7 +56,6 @@ async function open(path: string, t: { after(fn: () => Promise<void>): void }): 
   return { page, responses, failures };
 }
 
-/** Asserts every load succeeded and was under the base: the page, its assets, and config.json. */
 function assertAllUnderBase({ responses, failures }: Logged): void {
   assert.deepEqual(failures, []);
   assert.deepEqual(
@@ -122,12 +118,15 @@ test("the not-found view's link goes home through the router, and a reload there
   const logged = await open(`${app.base}missing`, t);
   const { page } = logged;
   await mounted(page, "app-not-found");
-  // The router intercepts the click, so the page isn't loaded again: the marker survives it.
   await page.evaluate("window.marker = true");
   await click(page, "app-not-found a");
   await mounted(page, "app-home");
   assert.deepEqual(await route(page), { path: app.base, tag: "app-home" });
-  assert.equal(await page.evaluate("window.marker === true"), true);
+  assert.equal(
+    await page.evaluate("window.marker === true"),
+    true,
+    "the router took the click without loading the page again",
+  );
 
   await reload(page);
   await mounted(page, "app-home");

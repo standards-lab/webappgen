@@ -1,7 +1,5 @@
 # Adapted from web-app-sdk (fbaba50): .github/workflows/ci.yml, its comment for the CLI's pins.
-# mise run install installs every pin mise.toml names, the chrome-headless-shell the written
-# project's browser tier runs in included, the module's requirements, and the starter's packages
-# into .cache/pnpm-store; the check then runs offline, the integration tier's full proof included.
+# The check on every push to main and every pull request.
 
 name: CI
 

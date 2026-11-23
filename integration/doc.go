@@ -17,4 +17,11 @@
 //
 // The harness is untagged, so the unit tier type-checks it on every pull
 // request; the suite files carry the integration tag.
+//
+// The full proof writes a project with --install and runs its own check,
+// with no network: mise installs only the pins it has, which webappgen's
+// own mise install installs, as the starter pins only what the root pins;
+// and pnpm installs only from the store webappgen's mise run install fills
+// from the starter's lockfile, failing on a package it lacks rather than
+// downloading it.
 package integration

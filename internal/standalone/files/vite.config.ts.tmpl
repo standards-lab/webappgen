@@ -1,40 +1,17 @@
-// The app's build (mise run build): index.html and src/ into dist/, with public/ copied beside
-// them. base is the absolute path the app is served under, the one index.html's <base href> names,
-// so the build's asset URLs agree with it. web-icons' iconFill() fills the page's data-icon
-// markers with their icons' markup, in the dev server and the build alike.
+// The app's build (mise run build) and its dev server, under the base index.html's <base href>
+// names.
+// See README.md
 // Adapted from spike-html-apps (2883d78): test/consumers/app/vite.config.ts, at an absolute base,
 // and vite.config.ts, its render-blocking input.
-//
-// CSS module scripts, `import sheet from "./x.css" with { type: "css" }`, which the components
-// use to adopt their sheets, and which Vite doesn't support: the plugin rewrites each import
-// carrying that attribute to a module whose default export is one constructed CSSStyleSheet per
-// file; a plain `import "./x.css"` carries none, so Vite bundles it as CSS. include names the
-// importers it parses, the layers' modules, as the build names them and as the dev server does,
-// with its ?v= version query; outputMode pins the CSSStyleSheet the components adopt. It parses
-// with rolldown/utils, which it doesn't declare, so package.json declares rolldown at the version
-// Vite resolves. The dev server serves the foundation and the components as they are, never
-// pre-bundled: the plugin never sees a pre-bundled module's imports, and pre-bundling would split
-// the foundation's registry between the bundle and the modules served beside it.
-//
-// strictExecutionOrder keeps each module's body in its source order across chunks: the registry
-// and the preferences module land in a chunk the settings share, and without it that chunk
-// applies the stored choice before the theme chunk registers the profiles it names.
 
 import { iconFill } from "@standards-lab/web-icons/vite";
 import { defineConfig } from "vite";
 import type { Plugin } from "vite";
 import { standardCssModules } from "vite-plugin-standard-css-modules";
 
-/** The theme module, which the page loads render-blocking ahead of the entry. */
-const theme = "src/theme.ts";
+const themeModule = "src/theme.ts";
 
-/**
- * Puts the theme module on the page as `<script type="module" blocking="render">`, ahead of the
- * entry. Vite folds every module script index.html names into the one entry it injects, without
- * the blocking attribute, so the theme module is an input of its own and this plugin names its
- * chunk: the built one in the build, the source under the base in the dev server.
- */
-function renderBlocking(): Plugin {
+function renderBlockingTheme(): Plugin {
   let base = "/";
   return {
     name: "render-blocking-theme",
@@ -44,12 +21,13 @@ function renderBlocking(): Plugin {
     transformIndexHtml: {
       order: "post",
       handler(_html, { bundle }) {
-        let src = base + theme;
+        let src = base + themeModule;
         if (bundle) {
           const chunk = Object.values(bundle).find(
             (output) => output.type === "chunk" && output.isEntry && output.name === "theme",
           );
-          if (!chunk) throw new Error(`render-blocking-theme: the build has no ${theme} chunk`);
+          if (!chunk)
+            throw new Error(`render-blocking-theme: the build has no ${themeModule} chunk`);
           src = base + chunk.fileName;
         }
         const attrs = { type: "module", blocking: "render", src };
@@ -70,15 +48,14 @@ export default defineConfig({
       outputMode: "CSSStyleSheet",
     }),
     iconFill(),
-    renderBlocking(),
+    renderBlockingTheme(),
   ],
   optimizeDeps: { exclude: ["@standards-lab/web-foundation", "@standards-lab/web-components"] },
   build: {
     outDir: "dist",
-    // Top-level await in main.ts, which every browser the router needs supports.
     target: "es2024",
     rolldownOptions: {
-      input: { index: "index.html", theme },
+      input: { index: "index.html", theme: themeModule },
       output: { strictExecutionOrder: true },
     },
   },

@@ -9,7 +9,12 @@
 #
 # Each scan captures its command's output in a variable before reading it, so under set -e a scan
 # command that fails (a go list missing a go.sum entry) fails currency instead of reporting
-# nothing.
+# nothing. The go directive follows the current Go minor, with no toolchain line, as the mise pin
+# selects the toolchain. Go requirements are checked within their major. The mise tools include
+# the starter's shared pins, so a tool reported here trails in a written project too; mise runs at
+# error level, as it warns on every run that a GitHub release has no assets. Each workflow's
+# actions, the release workflow's included, are checked against their repositories' latest
+# releases.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 export GOWORK=off
@@ -19,8 +24,6 @@ report() {
   trailing+="$1"$'\n'
 }
 
-# The go directive follows the current Go minor, with no toolchain line: the mise pin selects the
-# toolchain.
 go_latest=$(MISE_LOG_LEVEL=error mise latest go)
 go_minor=$(cut -d. -f1,2 <<<"$go_latest")
 gomod=$(go mod edit -json)
@@ -29,24 +32,18 @@ directive=$(jq -r .Go <<<"$gomod" | cut -d. -f1,2)
 toolchain=$(jq -r '.Toolchain // empty' <<<"$gomod")
 [[ -z $toolchain ]] || report "go.mod: toolchain $toolchain -> none"
 
-# Direct requirements with a newer version within their major.
 updates=$(go list -m -u -f \
   '{{if and (not .Main) (not .Indirect) .Update}}{{.Path}} {{.Version}} -> {{.Update.Version}}{{end}}' all)
 while read -r line; do
   [[ -z $line ]] || report "go.mod: $line"
 done <<<"$updates"
 
-# mise tools pinned below their latest version, the starter's shared pins among them, so a tool
-# reported here trails in a written project too. Errors only: mise warns on every run that a
-# GitHub release has no assets.
 outdated=$(MISE_LOG_LEVEL=error mise outdated --bump --no-global --json |
   jq -r 'to_entries[] | "\(.key) \(.value.requested) -> \(.value.bump)"')
 while read -r line; do
   [[ -z $line ]] || report "mise.toml: $line"
 done <<<"$outdated"
 
-# Each action a workflow uses, the release workflow's included, against its repository's latest
-# release.
 uses=$(grep -ho 'uses: *[^ ]*@[^ ]*' .github/workflows/*.yml | sed 's/uses: *//' | sort -u)
 while read -r action; do
   [[ -n $action ]] || continue

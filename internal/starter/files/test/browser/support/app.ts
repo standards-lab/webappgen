@@ -38,7 +38,6 @@ export async function click(page: Page, selector: string): Promise<void> {
   }
 }
 
-/** The keys the tests press, each as the DevTools Protocol's key events describe it. */
 const KEYS = {
   s: { key: "s", code: "KeyS", windowsVirtualKeyCode: 83, text: "s" },
   "?": { key: "?", code: "Slash", windowsVirtualKeyCode: 191, modifiers: 8, text: "?" },

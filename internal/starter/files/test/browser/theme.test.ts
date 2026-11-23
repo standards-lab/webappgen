@@ -3,6 +3,10 @@
 // choice stored under that key is on the root element before the browser first paints. The
 // first-paint case holds every script's fetch, and the same build with blocking="render" stripped
 // from its page paints the defaults first: the case fails without the render-blocking module.
+// A recorder, run ahead of the page's own scripts from Page.addScriptToEvaluateOnNewDocument,
+// records in window.flash the first paint, from a PerformanceObserver, and the moment data-scheme
+// lands on the root, from a MutationObserver; every script's fetch is held DELAY ms, so a module
+// that doesn't block rendering runs after the browser has painted.
 // Adapted from spike-html-apps (2883d78): test/browser/theme.test.ts, on the full entry.
 
 import assert from "node:assert/strict";
@@ -15,14 +19,10 @@ import { mounted, openWith, press, reload } from "./support/app.ts";
 import { serveBuild } from "./support/build.ts";
 import type { Served } from "./support/build.ts";
 
-/** The foundation's localStorage key for the choice (its preferences.js KEY). */
 const KEY = "web-foundation.preferences";
 
-/** A choice off every facet's default, which only the full entry registers, as sl-settings
- * stores it. */
 const CHOICE = { color: "catppuccin", space: "compact", type: "sans", scheme: "dark" };
 
-/** CHOICE as the root element carries it. */
 const APPLIED = {
   "data-palette": "catppuccin",
   "data-space": "compact",
@@ -30,12 +30,10 @@ const APPLIED = {
   "data-scheme": "dark",
 };
 
-/** The root element's theme attributes. */
 const ROOTED = `Object.fromEntries(["data-palette", "data-space", "data-type", "data-scheme"].map((name) => [name, document.documentElement.getAttribute(name)]))`;
 
 let browser: Browser;
 let app: Served;
-/** The build with every blocking="render" stripped from its page. */
 let plain: Served;
 
 before(async () => {
@@ -82,11 +80,6 @@ test("a color picked in Settings is on the root and stored at once, and a reload
   );
 });
 
-// The first paint, against the moment the stored choice reaches the root. Every script's fetch is
-// held DELAY ms, so a module that doesn't block rendering runs after the browser has painted.
-// The recorder runs ahead of the page's own scripts, from Page.addScriptToEvaluateOnNewDocument:
-// window.flash records, in ms since navigation, first-paint from a PerformanceObserver and the
-// moment data-scheme lands from a MutationObserver.
 describe("the stored choice at first paint", () => {
   const DELAY = 300;
 
@@ -104,9 +97,6 @@ describe("the stored choice at first paint", () => {
     }).observe(document.documentElement, { attributes: true });
   `;
 
-  /** Stores CHOICE on the served build's origin, then loads its base afresh with the recorder
-   * installed and every script's fetch held, resolving to what the recorder saw and how many of
-   * the page's scripts block rendering. */
   async function flash(
     served: Served,
     t: { after(fn: () => Promise<void>): void },

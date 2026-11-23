@@ -57,7 +57,6 @@ export async function readConfig(page: ConfigPage, load: Fetch = fetch): Promise
   return parse(name, await response.text());
 }
 
-/** The AppConfig the text holds; throws, naming its source, when it isn't JSON or an AppConfig. */
 function parse(name: string, text: string): AppConfig {
   let config: unknown;
   try {

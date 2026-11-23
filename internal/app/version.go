@@ -10,9 +10,6 @@ import (
 	"github.com/standards-lab/go-cli-sdk"
 )
 
-// versionCommand returns the version command, which prints the main
-// module's version. It declares no nodes, so it builds nothing and reads no
-// configuration.
 func versionCommand() *cli.Command {
 	return &cli.Command{
 		Name:    "version",
@@ -25,9 +22,6 @@ func versionCommand() *cli.Command {
 	}
 }
 
-// moduleVersion returns the main module's version from the build info, or
-// "(devel)" when the binary carries none, as under go test; go run reports
-// "(devel)" itself.
 func moduleVersion() string {
 	info, ok := debug.ReadBuildInfo()
 	if !ok || info.Main.Version == "" {

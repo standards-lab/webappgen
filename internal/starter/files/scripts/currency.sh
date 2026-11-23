@@ -4,10 +4,13 @@
 # writes nothing.
 # Adapted from web-app-sdk (fbaba50): scripts/currency.sh, for one client app: its layers'
 # dependencies by tag too, rolldown held as typescript is, and no workflows or peers.
+#
+# mise runs at error level, as it warns on every run that a GitHub release has no assets. A layer
+# is pinned to its repository's release tag, which the registry doesn't hold, so its tag is checked
+# against that repository's latest release.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-# Errors only: mise warns on every run that a GitHub release has no assets.
 outdated=$(MISE_LOG_LEVEL=error mise outdated --bump --local --json)
 trailing=$(node -p '
   Object.entries(JSON.parse(process.argv[1]))
@@ -15,7 +18,6 @@ trailing=$(node -p '
     .join("\n")
 ' "$outdated")
 
-# newest prints the newest release of package that range admits.
 newest() {
   local accepted
   accepted=$(pnpm view "$1@$2" version --json)
@@ -32,8 +34,6 @@ pin_of() {
   node -p 'require("./package.json").devDependencies[process.argv[1]]' "$1"
 }
 while read -r package pin; do
-  # A layer is pinned to its repository's release tag, which the registry doesn't hold: its tag
-  # against that repository's latest release.
   if [[ $pin == github:* ]]; then
     spec=${pin#github:}
     latest=$(gh api "repos/${spec%%#*}/releases/latest" --jq .tag_name)

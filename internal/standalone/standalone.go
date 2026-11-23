@@ -27,7 +27,6 @@ var files embed.FS
 // reads its API's address from. Its templates read [Values].
 var Files fs.FS = mustSub(files, "files")
 
-// mustSub returns fsys's subtree at dir, which the embed above guarantees.
 func mustSub(fsys fs.FS, dir string) fs.FS {
 	sub, err := fs.Sub(fsys, dir)
 	if err != nil {
@@ -54,8 +53,6 @@ type Values struct {
 	Version string
 }
 
-// options are one run's settings: its flags as given, and what Validate
-// derives from them and the directory.
 type options struct {
 	dir     string
 	name    string
@@ -74,7 +71,8 @@ type options struct {
 //
 // A valid run writes the project into dir, never prompting: the starter,
 // then [Files] over it, rendered with the flags' [Values] and version, the
-// webappgen version writing it. It then prints the next steps, mise install,
+// webappgen version writing it. It then prints the next steps, a cd into
+// dir, quoted so it pastes into a POSIX shell as written, mise install,
 // mise run install, and mise run check, and exits 0. With --install, it
 // runs the first two itself, with [project.Install], their progress on
 // stderr, and prints the one left; a mise missing from PATH or a step that
@@ -112,7 +110,6 @@ func Command(version string) *cli.Command {
 	return cmd
 }
 
-// dirArg is the leaf's Args: exactly one non-empty directory.
 func dirArg(args []string) error {
 	switch {
 	case len(args) == 0 || len(args) == 1 && args[0] == "":
@@ -123,9 +120,6 @@ func dirArg(args []string) error {
 	return nil
 }
 
-// validate checks dir and the flags o holds, and fills in what they leave
-// to defaults: the name from dir's own name, the title from the name, and
-// the base as [ParseBase] returns it.
 func (o *options) validate(dir string) error {
 	if err := checkDir(dir); err != nil {
 		return err
@@ -148,8 +142,6 @@ func (o *options) validate(dir string) error {
 	return nil
 }
 
-// checkDir refuses a dir that exists and is not an empty directory. A dir
-// that doesn't exist is the project's to create.
 func checkDir(dir string) error {
 	info, err := os.Stat(dir)
 	switch {
@@ -194,18 +186,11 @@ func ParseBase(base string) (string, error) {
 	return slashed, nil
 }
 
-// writeNextSteps writes to w the steps left to run in dir, the project's
-// directory, in order, its cd line quoted by [shellQuote] so it pastes
-// into a POSIX shell as written.
 func writeNextSteps(w io.Writer, dir string, steps ...string) error {
 	_, err := fmt.Fprintf(w, "Next steps:\n  cd %s\n  %s\n", shellQuote(dir), strings.Join(steps, "\n  "))
 	return err
 }
 
-// shellQuote returns s as one POSIX shell word: as it is when it holds only
-// letters, digits, and /._-+:@,=, which no shell treats specially, and
-// otherwise in single quotes, each single quote within closing the quotes,
-// escaped with a backslash, and reopening them.
 func shellQuote(s string) string {
 	plain := func(r rune) bool {
 		return 'a' <= r && r <= 'z' || 'A' <= r && r <= 'Z' || '0' <= r && r <= '9' || strings.ContainsRune("/._-+:@,=", r)

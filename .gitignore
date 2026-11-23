@@ -1,26 +1,20 @@
-# marathon working files.
 .claude/plans/
 .claude/briefs/
 
-# Per-machine mise overrides.
 mise.local.toml
 
-# Build and coverage artifacts.
 /webappgen
 bin/
 *.test
 coverage.out
 coverage.html
 
-# The pnpm store mise run install fills for the full proof.
 .cache/
 
-# Local workspace files.
 go.work
 go.work.sum
 tmp/
 
-# Editor and OS.
 *.swp
 *~
 .vscode/

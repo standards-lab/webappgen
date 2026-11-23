@@ -13,10 +13,6 @@ import (
 	"github.com/standards-lab/webappgen/internal/project"
 )
 
-// fakeMise puts, alone on PATH, a mise that appends its working directory
-// and arguments to a log, one line a run, prints a line of output, and
-// exits with code when its arguments are failArgs. It returns the log's
-// path.
 func fakeMise(t *testing.T, failArgs string, code int) string {
 	t.Helper()
 	bin := t.TempDir()
@@ -32,7 +28,6 @@ func fakeMise(t *testing.T, failArgs string, code int) string {
 	return log
 }
 
-// runs returns the lines the fake mise logged, or none when it never ran.
 func runs(t *testing.T, log string) []string {
 	t.Helper()
 	b, err := os.ReadFile(log)
@@ -45,8 +40,6 @@ func runs(t *testing.T, log string) []string {
 	return strings.Split(strings.TrimSuffix(string(b), "\n"), "\n")
 }
 
-// Install runs mise install, then mise run install, in dir, naming each
-// step on w before the step's own output.
 func TestInstall_RunsTheStepsInOrder(t *testing.T) {
 	dir := t.TempDir()
 	log := fakeMise(t, "", 0)
@@ -65,8 +58,6 @@ func TestInstall_RunsTheStepsInOrder(t *testing.T) {
 	}
 }
 
-// A mise missing from PATH fails the first step, naming both steps to run
-// once mise is installed.
 func TestInstall_MiseMissing(t *testing.T) {
 	dir := t.TempDir()
 	t.Setenv("PATH", t.TempDir())
@@ -83,8 +74,6 @@ func TestInstall_MiseMissing(t *testing.T) {
 	}
 }
 
-// A failing step stops the install, its error naming the step, its exit,
-// and the steps left to run; the steps after it never run.
 func TestInstall_StepFails(t *testing.T) {
 	for _, tc := range []struct {
 		failArgs string

@@ -18,10 +18,6 @@ import (
 	"github.com/standards-lab/webappgen/integration"
 )
 
-// `new standalone <dir>`, the standalone kind's leaf, as a running binary:
-// its help, the input it refuses, and what a valid run prints.
-
-// The leaf's help lists every flag with its default.
 func TestNewStandalone_Help(t *testing.T) {
 	res := integration.Run(t, "new", "standalone", "--help")
 
@@ -42,17 +38,13 @@ func TestNewStandalone_Help(t *testing.T) {
 	}
 }
 
-// Each refusal is a usage error naming the fix, on stderr with the leaf's
-// short usage, and leaves the target as it was: absent when it was absent,
-// and holding what it held. The dir argument, when a case has one, is
-// "{dir}", replaced with the case's absolute target.
 func TestNewStandalone_UsageErrors(t *testing.T) {
 	for _, tc := range []struct {
 		name    string
 		args    []string
-		holding []string // files to put in the target first; nil leaves it absent
-		empty   bool     // create the target as an empty directory
-		want    string   // the first line of stderr, after "webappgen new standalone: "
+		holding []string
+		empty   bool
+		want    string
 	}{
 		{
 			name: "missing dir",
@@ -141,12 +133,11 @@ func TestNewStandalone_UsageErrors(t *testing.T) {
 	}
 }
 
-// written is every path a standalone run writes, directories included, in
-// Tree's order: the starter's files with the kind's laid over them.
 var written = []string{
 	".gitignore",
 	".prettierignore",
 	".prettierrc.json",
+	"README.md",
 	"eslint.config.js",
 	"index.html",
 	"mise.toml",
@@ -183,7 +174,6 @@ var written = []string{
 	"vite.config.ts",
 }
 
-// read returns the file at name under dir.
 func read(t *testing.T, dir, name string) string {
 	t.Helper()
 	b, err := os.ReadFile(filepath.Join(dir, filepath.FromSlash(name)))
@@ -193,7 +183,6 @@ func read(t *testing.T, dir, name string) string {
 	return string(b)
 }
 
-// version returns what the built binary's version command prints.
 func version(t *testing.T) string {
 	t.Helper()
 	res := integration.Run(t, "version")
@@ -203,21 +192,17 @@ func version(t *testing.T) string {
 	return strings.TrimSuffix(res.Stdout, "\n")
 }
 
-// A valid run, into a directory that doesn't exist or is empty, with every
-// flag given or none, writes the project, prints the next steps, and exits
-// 0. The flags' values, or their defaults, are filled in where the project
-// reads them.
 func TestNewStandalone_Writes(t *testing.T) {
 	for _, tc := range []struct {
 		name    string
-		dir     string // the target's own name, under a temporary directory; empty is my-app
-		cd      string // the printed cd line's argument, {parent} the temporary directory; empty is the target as given
+		dir     string
+		cd      string
 		flags   []string
 		empty   bool
-		pkg     string // package.json's name, JSON-quoted
-		title   string // the page's <title>, HTML-escaped
+		pkg     string
+		title   string
 		base    string
-		apiBase string // config.json's apiBase, JSON-quoted
+		apiBase string
 	}{
 		{name: "defaults", pkg: `"my-app"`, title: "my-app", base: "/", apiBase: `"/api/"`},
 		{name: "empty dir", empty: true, pkg: `"my-app"`, title: "my-app", base: "/", apiBase: `"/api/"`},
@@ -255,7 +240,6 @@ func TestNewStandalone_Writes(t *testing.T) {
 			if res.Stdout != want {
 				t.Errorf("stdout = %q, want %q", res.Stdout, want)
 			}
-			// The printed cd line, pasted into a POSIX shell, lands in dir.
 			cdLine, _, _ := strings.Cut(strings.TrimPrefix(res.Stdout, "Next steps:\n  "), "\n")
 			if out, err := exec.Command("sh", "-c", cdLine+" && pwd -P").Output(); err != nil {
 				t.Errorf("sh -c %q: %v", cdLine+" && pwd -P", err)
@@ -275,6 +259,7 @@ func TestNewStandalone_Writes(t *testing.T) {
 				"index.html":         {`<base href="` + tc.base + `" />`, "<title>" + tc.title + "</title>"},
 				"vite.config.ts":     {`base: "` + tc.base + `",`},
 				"public/config.json": {"{\n  \"apiBase\": " + tc.apiBase + "\n}\n"},
+				"README.md":          {"# " + strings.Trim(tc.pkg, `"`) + "\n", "mise run check", "public/config.json"},
 			} {
 				content := read(t, dir, name)
 				for _, want := range wants {
@@ -287,7 +272,6 @@ func TestNewStandalone_Writes(t *testing.T) {
 				if path.Ext(name) == "" {
 					continue
 				}
-				// mise.toml's download URLs hold mise's own {{ version }}, written as such.
 				content := strings.ReplaceAll(read(t, dir, name), "{{ version }}", "")
 				if strings.Contains(content, "{{") {
 					t.Errorf("%s holds an unrendered {{", name)
@@ -304,19 +288,10 @@ func TestNewStandalone_Writes(t *testing.T) {
 	}
 }
 
-// releaseTag matches an exact release tag, vX.Y.Z.
 var releaseTag = regexp.MustCompile(`^v[0-9]+\.[0-9]+\.[0-9]+$`)
 
-// browserPin matches a platform's chrome-headless-shell entry: a download
-// from Chrome for Testing whose URL names mise's {{ version }}, and its
-// sha256.
 var browserPin = regexp.MustCompile(`^[a-z0-9-]+ = \{ url = "https://storage\.googleapis\.com/chrome-for-testing-public/\{\{ version \}\}/[^"]+/chrome-headless-shell-[a-z0-9-]+\.zip", checksum = "sha256:[0-9a-f]{64}"`)
 
-// The project takes each layer by an exact release tag, as a private
-// package, and its lockfile pins each at the same tag; its mise config names
-// the webappgen that wrote it in one comment, pins no webappgen, and pins
-// the browser tier's browser for every platform the CLI ships for, each
-// download's URL naming mise's version and carrying its sha256.
 func TestNewStandalone_Pins(t *testing.T) {
 	dir := filepath.Join(t.TempDir(), "my-app")
 

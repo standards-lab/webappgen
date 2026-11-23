@@ -8,9 +8,6 @@ import (
 	"strings"
 )
 
-// installSteps are what [Install] runs in a written project, in order:
-// mise installs the pins the project's mise.toml names, then the project's
-// own install task installs the rest, its node_modules.
 var installSteps = [][]string{
 	{"install"},
 	{"run", "install"},

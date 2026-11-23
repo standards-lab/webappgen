@@ -17,17 +17,8 @@ import (
 	"github.com/standards-lab/webappgen/integration"
 )
 
-// `new standalone <dir> --install` as a running binary: the install it runs
-// in the written project, the refusal when it can't, and the full proof,
-// a written project installed offline whose own check passes.
-
-// checkTimeout bounds the written project's own check: its lint, types,
-// unit tier, build, and browser tier.
 const checkTimeout = 5 * time.Minute
 
-// With no mise on PATH, --install exits with the failure code, naming the
-// step and the steps left to run, after the project is written; the
-// written project stays, and no next steps are printed.
 func TestNewStandalone_InstallWithoutMise(t *testing.T) {
 	dir := filepath.Join(t.TempDir(), "my-app")
 
@@ -49,11 +40,6 @@ func TestNewStandalone_InstallWithoutMise(t *testing.T) {
 	}
 }
 
-// offline is the environment that holds the full proof to no network: mise
-// installs only the pins it has, which the CLI's own mise install installs
-// (the starter pins only what the root pins), and pnpm installs only from
-// the store the CLI's mise run install fills from the starter's lockfile,
-// failing on a package it lacks rather than downloading it.
 func offline(t *testing.T) []string {
 	t.Helper()
 	store, err := filepath.Abs(filepath.Join("..", ".cache", "pnpm-store"))
@@ -63,10 +49,6 @@ func offline(t *testing.T) []string {
 	return []string{"MISE_OFFLINE=1", "pnpm_config_offline=true", "pnpm_config_store_dir=" + store}
 }
 
-// The full proof: --install installs a written project, offline, and the
-// project's own check, mise run check, passes in it, its browser tier
-// loading the app under the base given. The steps' progress goes to
-// stderr; stdout is the one step left.
 func TestNewStandalone_InstallThenCheck(t *testing.T) {
 	dir := filepath.Join(t.TempDir(), "x")
 	env := offline(t)

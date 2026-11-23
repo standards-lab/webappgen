@@ -13,7 +13,6 @@ import { serve } from "@standards-lab/web-tooling/server.js";
 /** The build's directory, which mise run build writes. */
 export const DIST = "dist";
 
-/** The content type of each extension the build holds; any other is sent as bytes. */
 const types: Record<string, string> = {
   ".html": "text/html",
   ".js": "text/javascript",
@@ -43,7 +42,8 @@ export function baseOf(dist = DIST): string {
   return base;
 }
 
-/** Serves the build; `page` rewrites every HTML file it sends, index.html included. */
+/** Serves the build; `page` rewrites every HTML file it sends, index.html included. A request's
+ * path under the base is normalized as an absolute path, so no request reaches outside dist/. */
 export async function serveBuild(
   options: { dist?: string; page?: (html: string) => string } = {},
 ): Promise<Served> {
@@ -54,7 +54,6 @@ export async function serveBuild(
     handler: async (request, response) => {
       const pathname = new URL(request.url ?? "/", "http://host").pathname;
       if (!pathname.startsWith(base)) return false;
-      // normalize() of an absolute path never climbs above its root, so no request leaves dist/.
       let path: string;
       try {
         path = normalize(`/${decodeURIComponent(pathname.slice(base.length))}`);

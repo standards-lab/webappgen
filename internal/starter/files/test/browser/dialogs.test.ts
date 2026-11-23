@@ -15,7 +15,6 @@ import { click, mounted, press } from "./support/app.ts";
 import { serveBuild } from "./support/build.ts";
 import type { Served } from "./support/build.ts";
 
-/** Each dialog: its id, the key that opens it, its opener's name, and its width class. */
 const DIALOGS = [
   { id: "help", key: "?", name: "Help", width: "dialog-fit" },
   { id: "settings", key: "s", name: "Settings", width: "dialog-wide" },
@@ -23,15 +22,12 @@ const DIALOGS = [
 
 type Dialog = (typeof DIALOGS)[number];
 
-/** The header's button that opens the dialog, as a page expression. */
 const opener = (dialog: Dialog): string =>
   `document.querySelector('body > header .header-actions [commandfor="${dialog.id}"][command="show-modal"]')`;
 
-/** The dialog's Close in its header, as a page expression. */
 const closer = (dialog: Dialog): string =>
   `document.querySelector('#${dialog.id} > .dialog-header [commandfor="${dialog.id}"][command="close"]')`;
 
-/** Whether the dialog is open, whether as a modal, and where focus is: "opener" or a tag. */
 const shown = (
   page: Page,
   dialog: Dialog,
@@ -58,7 +54,6 @@ after(async () => {
   await app?.stop();
 });
 
-/** Opens the app's base with focus emulated, once keys.js has bound both openers. */
 async function open(t: { after(fn: () => Promise<void>): void }): Promise<Page> {
   const page = await browser.open(`${app.origin}${app.base}`);
   t.after(() => page.close());

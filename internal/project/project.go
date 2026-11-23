@@ -14,8 +14,6 @@ import (
 	"text/template"
 )
 
-// templateSuffix ends the name of a file [Write] renders rather than
-// copies.
 const templateSuffix = ".tmpl"
 
 // Write writes the files of layers into dir, creating it and the
@@ -23,9 +21,10 @@ const templateSuffix = ".tmpl"
 // later layer holds at the same written path replaces an earlier one's,
 // whether either is a template or not. A file named x.tmpl is a
 // text/template, executed with values, and written as x; its templates may
-// call json, which writes a value as JSON, a string quoted and escaped, and
-// html, text/template's own escaping for HTML text and attributes. Every
-// other file is written byte for byte. Files are written 0644, and a .sh
+// call json, which writes a value as JSON, a string quoted and escaped, with
+// <, >, and & as they are, and html, text/template's own escaping for HTML
+// text and attributes. A field values lacks is an error, never an empty
+// string. Every other file is written byte for byte. Files are written 0644, and a .sh
 // script 0755, as the embedded trees carry no modes.
 //
 // Every template is rendered before anything is written, so a template
@@ -51,8 +50,6 @@ func Write(dir string, values any, layers ...fs.FS) error {
 	return nil
 }
 
-// render returns each file the layers write, by its written path, its
-// templates executed with values.
 func render(values any, layers []fs.FS) (map[string][]byte, error) {
 	files := map[string][]byte{}
 	for _, layer := range layers {
@@ -80,12 +77,8 @@ func render(values any, layers []fs.FS) (map[string][]byte, error) {
 	return files, nil
 }
 
-// funcs are the functions a template may call beside text/template's
-// builtins.
 var funcs = template.FuncMap{"json": toJSON}
 
-// execute renders the template text, named name, with values. A field
-// values lacks is an error, never an empty string.
 func execute(name string, text []byte, values any) ([]byte, error) {
 	t, err := template.New(name).Funcs(funcs).Option("missingkey=error").Parse(string(text))
 	if err != nil {
@@ -98,8 +91,6 @@ func execute(name string, text []byte, values any) ([]byte, error) {
 	return b.Bytes(), nil
 }
 
-// toJSON returns v as JSON, without escaping <, >, and &, which a JSON
-// file needn't.
 func toJSON(v any) (string, error) {
 	var b bytes.Buffer
 	enc := json.NewEncoder(&b)

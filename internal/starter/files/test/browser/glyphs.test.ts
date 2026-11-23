@@ -21,7 +21,6 @@ import { mounted } from "./support/app.ts";
 import { baseOf, serveBuild } from "./support/build.ts";
 import type { Served } from "./support/build.ts";
 
-/** Each glyph button, by its selector, and the markup its glyph is. */
 const GLYPHS: Record<string, string> = {
   '[commandfor="help"][command="show-modal"]': question,
   '[commandfor="settings"][command="show-modal"]': gear,
@@ -56,8 +55,6 @@ after(async () => {
   await rm(cacheDir, { recursive: true, force: true });
 });
 
-/** Opens `url` and reads, once the home view is mounted, how many markers are left and whether
- * each glyph button holds exactly its icon's svg. */
 async function glyphs(
   url: string,
   t: { after(fn: () => Promise<void>): void },
@@ -78,7 +75,6 @@ async function glyphs(
   })()`);
 }
 
-/** Every glyph button filled. */
 const all = Object.fromEntries(Object.keys(GLYPHS).map((selector) => [selector, true]));
 
 test("the build fills every glyph and leaves no marker", async (t) => {

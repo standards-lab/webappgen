@@ -93,8 +93,14 @@ mise run check     # vet, lint, and the unit and integration tiers; reads no net
 mise run currency  # every Go requirement, tool, and action pin behind its latest; reads the network
 ```
 
-`mise run install` warms `.cache/pnpm-store` with the starter's packages, so the integration
-tier's full proof writes a project with `--install` and runs the project's own check offline.
+`mise run install` is the one task that reads the network; no other task installs a missing tool,
+and each names `mise run install` when one is missing. It warms `.cache/pnpm-store` with the
+starter's packages, so the integration tier's full proof writes a project with `--install` and
+runs the project's own check offline. The module is built alone, with `GOWORK=off`, never in a
+workspace a parent directory holds. Tests are black-box, in each package's `_test` package:
+golangci-lint's testpackage allows only an `export_test.go`, and only to export a clock or probe
+hook the API can't reach deterministically. nolintlint requires every `//nolint` to name its
+linter and give its reason.
 
 The root `mise.toml` pins every tool the starter's `internal/starter/files/mise.toml.tmpl` pins,
 each entry as the starter writes it, and a unit test holds the two equal. Bump a shared tool in
@@ -102,10 +108,14 @@ both files at once; bumping chrome-headless-shell also takes each platform's sha
 taken by hand from its download, in both. A changed starter package regenerates
 `internal/starter/files/pnpm-lock.yaml` with the pinned pnpm.
 
-A release is a `vX.Y.Z` tag pushed on main's merge commit, with its `CHANGELOG.md` section: the
-release workflow checks, builds, and packs the four binaries with `scripts/pack.sh`, which a
-clone at the tag also runs (`scripts/pack.sh vX.Y.Z <outdir>`), and publishes the release once
-every archive is attached.
+A release is a `vX.Y.Z` tag pushed on main's merge commit, with its `CHANGELOG.md` section; the
+release workflow tags nothing. It refuses a tag whose commit isn't on main, checks, and builds
+and packs the four binaries with `scripts/pack.sh`, which a clone at the tag also runs
+(`scripts/pack.sh vX.Y.Z <outdir>`) and which refuses any binary whose version isn't the tag. It
+creates the release as a draft from the tag's `CHANGELOG.md` section, attaches every archive and
+`SHA256SUMS`, and only then publishes it, so a release appears only whole: a failed upload leaves
+a draft. Runs for one tag are serialized and never cancelled, and each action is pinned by its
+exact release tag, which `mise run currency` compares with the action's latest release.
 
 ## License
 
