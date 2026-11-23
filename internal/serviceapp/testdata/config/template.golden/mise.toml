@@ -1,0 +1,125 @@
+# From go-web-sdk-template (7e5f330): template/mise.toml
+# See architecture/standards/go-elemental/principles/release-and-ci.md
+[settings]
+task.run_auto_install = false
+
+[tools]
+"aqua:air-verse/air" = "1.67.4"
+"github:standards-lab/claude-plugins" = { version = "0.22.0", version_prefix = "marathon/v" }
+go = "1.27.4"
+golangci-lint = "2.15.0"
+jq = "1.8.2"
+
+[env]
+APP_ENV = "local"
+GO_MODULES = "."
+
+[tasks.check]
+depends = ["client:build", "client:check"]
+description = "Build, vet, format, fix, tidy, test the unit tier, and lint every module, vetting, fixing, and linting the integration suite too, then run lint-context and lint-references at the project root and, when the project is nested, at the git top level; writes nothing"
+run = '''
+set -eu
+export GOWORK=off
+for mod in $GO_MODULES; do
+  echo "check: $mod"
+  cd "$MISE_PROJECT_ROOT/$mod"
+  go build ./...
+  go vet -tags integration ./...
+  unformatted=$(gofmt -l .)
+  if [ -n "$unformatted" ]; then echo "gofmt: unformatted files:"; echo "$unformatted"; exit 1; fi
+  go fix -tags integration -diff ./...
+  go mod tidy -diff
+  go test -race ./...
+  golangci-lint run --build-tags integration ./...
+done
+cd "$MISE_PROJECT_ROOT"
+root=$(pwd -P)
+top=$(git rev-parse --show-toplevel 2>/dev/null || echo "$root")
+fail=0
+for lint in lint-context lint-references; do
+  if ! command -v "$lint" >/dev/null; then
+    echo "FAIL: $lint is not on PATH; run mise install" >&2
+    fail=1
+    continue
+  fi
+  "$lint" || fail=1
+  [ "$top" = "$root" ] || (cd "$top" && "$lint") || fail=1
+done
+exit "$fail"
+'''
+
+[tasks.currency]
+description = "Report every requirement, Go version, tool, and action pin behind its latest, running the script through bash since gonew drops its executable bit; writes nothing"
+run = "bash scripts/currency.sh"
+
+[tasks.upgrade]
+description = "Upgrade every module's go directive to the current Go minor with no toolchain line, its direct requirements, and the local mise tools to their latest, rewriting go.mod and mise.toml"
+run = '''
+set -eu
+export GOWORK=off
+go_minor=$(mise latest go | cut -d. -f1,2)
+for mod in $GO_MODULES; do
+  cd "$MISE_PROJECT_ROOT/$mod"
+  go mod edit -go="$go_minor" -toolchain=none
+  direct=$(go mod edit -json | jq -r '.Require[]? | select(.Indirect | not) | .Path')
+  [ -z "$direct" ] || go get $(printf '%s@latest ' $direct)
+  go mod tidy
+done
+cd "$MISE_PROJECT_ROOT"
+mise upgrade --bump --local
+'''
+
+[tasks.build]
+description = "Build the module"
+run = "go build ./..."
+
+[tasks.vet]
+description = "Run go vet, the integration suite included"
+run = "go vet -tags integration ./..."
+
+[tasks.serve]
+depends = ["client:build"]
+description = "Run the service locally"
+run = "go run ./cmd/server"
+
+[tasks.test]
+depends = ["client:build"]
+description = "Run the unit tier"
+run = "go test -race ./..."
+
+[tasks.integration]
+depends = ["client:build"]
+description = "Run the integration tier against the built service, as a subprocess"
+run = "go test -race -count=1 -tags integration ./integration/"
+
+[tasks.fmt]
+description = "Format all Go source"
+run = "gofmt -w ."
+
+[tasks.tidy]
+description = "Run go mod tidy"
+run = "go mod tidy"
+
+[tasks.lint]
+description = "Run golangci-lint, the integration suite included"
+run = "golangci-lint run --build-tags integration ./..."
+
+[tasks."client:build"]
+description = "Build the web client in client with its own mise run build"
+run = "mise -C client run build"
+
+[tasks."client:check"]
+description = "Run the web client's own check in client, after its build"
+depends = ["client:build"]
+run = "mise -C client run check"
+
+[tasks.dev]
+description = "Run the dev loop: vite build --watch in client beside air, which rebuilds and restarts the server on each Go, JS, and CSS change (.air.toml)"
+depends = ["client:build"]
+run = """
+set -e
+trap 'kill 0' EXIT INT TERM
+(mise -C client exec -- pnpm exec vite build --watch) &
+air &
+wait
+"""

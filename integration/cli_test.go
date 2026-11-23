@@ -37,7 +37,7 @@ func TestCLI_RootHelp(t *testing.T) {
 			if res.Code != process.ExitUsage {
 				t.Errorf("code = %d, want %d; stderr = %q", res.Code, process.ExitUsage, res.Stderr)
 			}
-			for _, command := range []string{"new", "version"} {
+			for _, command := range []string{"inject", "new", "version"} {
 				if !strings.Contains(res.Stdout, "\n  "+command+" ") {
 					t.Errorf("stdout = %q, want the root help listing %s", res.Stdout, command)
 				}
@@ -67,6 +67,24 @@ func TestCLI_NewListsKinds(t *testing.T) {
 	}
 }
 
+func TestCLI_InjectListsKinds(t *testing.T) {
+	for _, args := range [][]string{{"inject"}, {"inject", "--help"}} {
+		t.Run(strings.Join(args, " "), func(t *testing.T) {
+			res := integration.Run(t, args...)
+
+			if res.Code != process.ExitUsage {
+				t.Errorf("code = %d, want %d; stderr = %q", res.Code, process.ExitUsage, res.Stderr)
+			}
+			if !strings.Contains(res.Stdout, "Commands:\n  service-app ") {
+				t.Errorf("stdout = %q, want inject's help listing service-app", res.Stdout)
+			}
+			if res.Stderr != "" {
+				t.Errorf("stderr = %q, want empty", res.Stderr)
+			}
+		})
+	}
+}
+
 func TestCLI_UnknownCommand(t *testing.T) {
 	for _, tc := range []struct {
 		args []string
@@ -74,6 +92,7 @@ func TestCLI_UnknownCommand(t *testing.T) {
 	}{
 		{[]string{"bogus"}, `webappgen: unknown command "bogus"`},
 		{[]string{"new", "bogus"}, `webappgen new: unknown command "bogus"`},
+		{[]string{"inject", "bogus"}, `webappgen inject: unknown command "bogus"`},
 	} {
 		t.Run(strings.Join(tc.args, " "), func(t *testing.T) {
 			res := integration.Run(t, tc.args...)

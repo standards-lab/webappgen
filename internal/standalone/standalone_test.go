@@ -1,10 +1,15 @@
 package standalone_test
 
 import (
+	"bytes"
+	"os"
+	"path/filepath"
 	"testing"
 
+	"github.com/standards-lab/webappgen/internal/project"
 	"github.com/standards-lab/webappgen/internal/project/projecttest"
 	"github.com/standards-lab/webappgen/internal/standalone"
+	"github.com/standards-lab/webappgen/internal/starter"
 )
 
 func TestFiles_Tracked(t *testing.T) {
@@ -57,5 +62,26 @@ func TestParseBase_Refuses(t *testing.T) {
 				t.Errorf("ParseBase(%q) = %q with its error, want empty", base, got)
 			}
 		})
+	}
+}
+
+func TestFiles_WriteTheREADMEAndMiseTomlAsGolden(t *testing.T) {
+	dir := t.TempDir()
+	values := standalone.Values{Name: "my-app", Title: "my-app", Base: "/", APIBase: "/api/", Version: "(devel)"}
+	if err := project.Write(dir, values, starter.Files, standalone.Files); err != nil {
+		t.Fatal(err)
+	}
+	for _, name := range []string{"README.md", "mise.toml"} {
+		got, err := os.ReadFile(filepath.Join(dir, name))
+		if err != nil {
+			t.Fatal(err)
+		}
+		want, err := os.ReadFile(filepath.Join("testdata", name+".golden"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !bytes.Equal(got, want) {
+			t.Errorf("%s isn't byte for byte testdata/%s.golden:\n%s", name, name, got)
+		}
 	}
 }

@@ -3,11 +3,8 @@ package standalone
 import (
 	"context"
 	"embed"
-	"errors"
 	"fmt"
-	"io"
 	"io/fs"
-	"os"
 	"path"
 	"path/filepath"
 	"strings"
@@ -53,6 +50,10 @@ type Values struct {
 	Version string
 }
 
+// Kind is the kind's name, standalone, which the starter's templates read
+// to write what this kind alone needs.
+func (Values) Kind() string { return "standalone" }
+
 type options struct {
 	dir     string
 	name    string
@@ -61,6 +62,8 @@ type options struct {
 	apiBase string
 	install bool
 }
+
+var installSteps = []project.Step{{"mise", "install"}, {"mise", "run", "install"}}
 
 // Command returns the standalone leaf, `new standalone <dir>`. Its Args
 // and Validate refuse, as usage errors that name the fix, a missing or
@@ -93,12 +96,12 @@ func Command(version string) *cli.Command {
 				return err
 			}
 			if !o.install {
-				return writeNextSteps(inv.Stdout, o.dir, "mise install", "mise run install", "mise run check")
+				return project.WriteNextSteps(inv.Stdout, o.dir, append(project.StepNames(installSteps), "mise run check")...)
 			}
-			if err := project.Install(ctx, o.dir, inv.Stderr); err != nil {
+			if err := project.Install(ctx, o.dir, inv.Stderr, installSteps...); err != nil {
 				return err
 			}
-			return writeNextSteps(inv.Stdout, o.dir, "mise run check")
+			return project.WriteNextSteps(inv.Stdout, o.dir, "mise run check")
 		},
 	}
 	flags := cmd.Flags()
@@ -121,7 +124,7 @@ func dirArg(args []string) error {
 }
 
 func (o *options) validate(dir string) error {
-	if err := checkDir(dir); err != nil {
+	if err := project.CheckDir(dir); err != nil {
 		return err
 	}
 	base, err := ParseBase(o.base)
@@ -138,26 +141,6 @@ func (o *options) validate(dir string) error {
 	}
 	if o.title == "" {
 		o.title = o.name
-	}
-	return nil
-}
-
-func checkDir(dir string) error {
-	info, err := os.Stat(dir)
-	switch {
-	case errors.Is(err, fs.ErrNotExist):
-		return nil
-	case err != nil:
-		return fmt.Errorf("%w: give a new or empty directory", err)
-	case !info.IsDir():
-		return fmt.Errorf("%s exists and isn't a directory: give a new or empty directory", dir)
-	}
-	entries, err := os.ReadDir(dir)
-	switch {
-	case err != nil:
-		return fmt.Errorf("%w: give a new or empty directory", err)
-	case len(entries) > 0:
-		return fmt.Errorf("%s exists and isn't empty: give a new or empty directory", dir)
 	}
 	return nil
 }
@@ -184,19 +167,4 @@ func ParseBase(base string) (string, error) {
 		return "", fmt.Errorf("--base %q isn't clean: give %s", base, slashed)
 	}
 	return slashed, nil
-}
-
-func writeNextSteps(w io.Writer, dir string, steps ...string) error {
-	_, err := fmt.Fprintf(w, "Next steps:\n  cd %s\n  %s\n", shellQuote(dir), strings.Join(steps, "\n  "))
-	return err
-}
-
-func shellQuote(s string) string {
-	plain := func(r rune) bool {
-		return 'a' <= r && r <= 'z' || 'A' <= r && r <= 'Z' || '0' <= r && r <= '9' || strings.ContainsRune("/._-+:@,=", r)
-	}
-	if s != "" && strings.TrimLeftFunc(s, plain) == "" {
-		return s
-	}
-	return "'" + strings.ReplaceAll(s, "'", `'\''`) + "'"
 }

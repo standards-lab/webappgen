@@ -1,9 +1,10 @@
 # webappgen context
 
 webappgen is the web client CLI, a Go command on go-cli-sdk: `webappgen new <kind>` writes a
-client project for one kind of app on the stack, from files embedded in its binary. It writes one
-kind, `standalone`, a static app. Two embedded kinds, a client inside a new or an existing Go web
-service served by go-web-sdk's `NewClient`, are planned for the goal's `embedded` task (v0.2.0).
+client project for one kind of app on the stack, and `webappgen inject <kind>` installs a client
+into an existing project, from files embedded in its binary. It writes two kinds: `standalone`, a
+static app, and `service-app`, a client inside a new or an existing go-web-sdk-template service,
+served by go-web-sdk's `NewClient` (v0.2.0).
 
 It is the root Go module `github.com/standards-lab/webappgen`, released by a plain `vX.Y.Z` tag
 as binaries for Linux and macOS; its first release is v0.1.0. Its goals live in the coordinator's
@@ -15,14 +16,18 @@ project's tasks, deployment, and the contributor workflow.
 
 ## Capability map
 
-- **CLI** (built): [`internal/app`](../internal/app/): `version`, and `new` with one leaf per
-  kind of app. Usage errors name the fix.
+- **CLI** (built): [`internal/app`](../internal/app/): `version`, `new` with one leaf per kind
+  of app, and `inject` with one leaf per kind it installs. Usage errors name the fix.
 - **Standalone kind** (built): [`internal/standalone`](../internal/standalone/): `new standalone
   <dir>` writes the starter, then the standalone kind's own files over it (`index.html`,
   `vite.config.ts`, `public/config.json`). `--install` then runs `mise install` and
   `mise run install` in the project.
-- **Embedded kinds** (planned): `new new-service` and `new existing-service` write a client
-  inside a new or an existing Go web service, served by go-web-sdk's `NewClient` (v0.2.0).
+- **Service-app kind** (built): [`internal/serviceapp`](../internal/serviceapp/): `new
+  service-app <module> <dir>` copies go-web-sdk-template with gonew, and `inject service-app
+  <service-dir>` takes an existing copy; each writes the client, its Go package,
+  `internal/app/client.go`, and `.air.toml`, and edits the service's wiring, `mise.toml`, and CI,
+  printing the edits a differing service leaves. `--install` runs the install steps.
+  [docs/service-app.md](../docs/service-app.md) details what is written.
 - **The written project** (built): [`internal/starter/files`](../internal/starter/files/), the
   starter every kind writes before its own files, on the layers by exact tag with a committed
   lockfile. With the standalone kind's files it is the foundation's application page with Help
@@ -30,8 +35,9 @@ project's tasks, deployment, and the contributor workflow.
   tiers. Its [`README.md`](../internal/starter/files/README.md.tmpl) documents its tasks and how
   it is built.
 - **The full proof** (built): [`integration`](../integration/): the root `mise run install`
-  warms `.cache/pnpm-store`, and the integration tier writes a project with `--install` offline
-  and runs the written project's check.
+  fills `.cache/pnpm-store` and the module cache, and the integration tier, offline, writes each
+  kind with `--install` and runs the written project's check; for the service app it also builds,
+  tests, and starts the service, then fetches the shell, an asset, and a deep link.
 - **Release** (built): [`release.yml`](../.github/workflows/release.yml): a tag on main
   triggers the workflow, which runs `scripts/pack.sh` to build four archives and `SHA256SUMS`,
   attaches them to a draft release, then publishes it.
@@ -47,3 +53,5 @@ copied file carries its own line.
   `package.json` and `test/consumers/app/package.json`, moved onto the standards-lab layers.
 - `internal/standalone/files/public/config.json.tmpl`: new.
 - `internal/starter/files/pnpm-lock.yaml`: produced by `pnpm install` (pnpm 12.21.0).
+- `internal/standalone/testdata/README.md.golden` and `mise.toml.golden`: generated, the
+  starter's templates as the standalone kind writes them for `my-app`, byte for byte.

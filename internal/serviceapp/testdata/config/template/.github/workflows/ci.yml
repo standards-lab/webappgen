@@ -1,0 +1,34 @@
+# From go-web-sdk-template (7e5f330): template/.github/workflows/ci.yml
+# CI: the check on every push and pull request, and the integration tier on push to main and on
+# demand.
+# See architecture/standards/go-elemental/principles/release-and-ci.md
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - uses: jdx/mise-action@v5.2.10
+
+      - name: mise run check
+        run: mise run check
+
+  integration:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - uses: jdx/mise-action@v5.2.10
+
+      - name: go test -tags integration
+        run: go test -race -count=1 -tags integration ./integration/

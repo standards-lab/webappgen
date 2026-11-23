@@ -6,13 +6,14 @@
 task.run_auto_install = false
 
 [tools]
-"github:standards-lab/claude-plugins" = { version = "0.23.0", version_prefix = "marathon/v" }
+"aqua:air-verse/air" = "1.67.4"
+"github:standards-lab/claude-plugins" = { version = "0.24.0", version_prefix = "marathon/v" }
 actionlint = "1.7.12"
 go = "1.27.4"
 golangci-lint = "2.15.0"
 jq = "1.8.2"
 node = "26.13.1"
-pnpm = "12.21.0"
+pnpm = "12.23.0"
 shellcheck = "0.11.0"
 "github:microsoft/typescript-go" = { version = "7.0.2", version_prefix = "typescript/v", bin_path = "package/lib" }
 
@@ -36,8 +37,8 @@ hide = true
 run = "scripts/preflight.sh"
 
 [tasks.install]
-description = "Install the pins, the module's requirements, and the starter's packages into .cache/pnpm-store; reads the network"
-run = ["mise install", "go mod download", "scripts/fetch-store.sh"]
+description = "Install the pins, the module's requirements, the starter's packages into .cache/pnpm-store, and the service-app kind's pins and the template's requirements into the module cache; reads the network"
+run = ["mise install", "go mod download", "scripts/fetch-store.sh", "scripts/fetch-service.sh"]
 
 [tasks.vet]
 description = "Build, vet, and check the format, fixes, and go.mod, the integration suite included; writes nothing"

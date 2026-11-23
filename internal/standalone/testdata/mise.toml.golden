@@ -1,0 +1,106 @@
+# Written by webappgen (devel).
+# The project's tools and tasks.
+# See README.md
+# Adapted from spike-html-apps (2883d78): mise.toml, its Node toolchain and tasks, for one client
+# app.
+# Adapted from web-app-sdk (fbaba50): mise.toml, its pins, its browser's for every platform the CLI
+# ships for.
+[settings]
+task.run_auto_install = false
+
+[tools]
+node = "26.13.1"
+pnpm = "12.23.0"
+shellcheck = "0.11.0"
+"github:microsoft/typescript-go" = { version = "7.0.2", version_prefix = "typescript/v", bin_path = "package/lib" }
+
+[tools."http:chrome-headless-shell"]
+version = "158.0.8127.36"
+version_list_url = "https://googlechromelabs.github.io/chrome-for-testing/last-known-good-versions.json"
+version_json_path = ".channels.Stable.version"
+
+[tools."http:chrome-headless-shell".platforms]
+linux-x64 = { url = "https://storage.googleapis.com/chrome-for-testing-public/{{ version }}/linux64/chrome-headless-shell-linux64.zip", checksum = "sha256:2d3a23017323c54fd457a678e4351f895c4076d8050e39d5aa6247f93448b73a", size = "132087165" }
+linux-arm64 = { url = "https://storage.googleapis.com/chrome-for-testing-public/{{ version }}/linux-arm64/chrome-headless-shell-linux-arm64.zip", checksum = "sha256:176ee5c55486c22de43128871189061365ea28e881fc96016fd18e7cb59437c8", size = "129938239" }
+macos-x64 = { url = "https://storage.googleapis.com/chrome-for-testing-public/{{ version }}/mac-x64/chrome-headless-shell-mac-x64.zip", checksum = "sha256:e0c5d07d8f5bcc5bdd5ef370e7daf3770856b585fcc9eecf441c7e3bb2e3d1cf", size = "112306247" }
+macos-arm64 = { url = "https://storage.googleapis.com/chrome-for-testing-public/{{ version }}/mac-arm64/chrome-headless-shell-mac-arm64.zip", checksum = "sha256:c24d40a3786322ff3a5e3ac6eed162226cbaf07ebe468715407827226b0f8897", size = "105057133" }
+
+[tasks.preflight]
+description = "Fail naming mise run install when a tool the tasks need is missing"
+hide = true
+run = "scripts/preflight.sh"
+
+[tasks.install]
+description = "Install the pins and node_modules from pnpm-lock.yaml, the layers at their tags; reads the network"
+run = ["mise install", "pnpm install --frozen-lockfile"]
+
+[tasks.lint]
+description = "Run the linters: ESLint, Prettier, and shellcheck"
+depends = ["lint:eslint", "lint:format", "lint:shell"]
+
+[tasks."lint:eslint"]
+description = "Lint the code with ESLint"
+depends = ["preflight"]
+run = "pnpm exec eslint ."
+
+[tasks."lint:format"]
+description = "Check the code, JSON, and CSS format with Prettier"
+depends = ["preflight"]
+run = "pnpm exec prettier --check ."
+
+[tasks."lint:shell"]
+description = "Shellcheck the scripts"
+run = "shellcheck scripts/*.sh"
+
+[tasks.types]
+description = "Type-check the app and the tests with tsc"
+depends = ["types:src", "types:test"]
+
+[tasks."types:src"]
+description = "Type-check the app, its Vite config, and its ESLint config with tsc"
+depends = ["preflight"]
+run = "tsc -p ."
+
+[tasks."types:test"]
+description = "Type-check the tests and the scripts, which node runs as TypeScript, with tsc"
+depends = ["preflight"]
+run = "tsc -p tsconfig.test.json"
+
+[tasks."test:unit"]
+description = "Run the unit tier under node --test"
+depends = ["preflight"]
+run = "node --test 'test/unit/*.test.ts'"
+
+[tasks.build]
+description = "Build the app with Vite (vite.config.ts) into dist/"
+depends = ["preflight"]
+run = "pnpm exec vite build"
+
+[tasks.dev]
+description = "Serve the app from its source with Vite's dev server, reloading on each change; reads the network only as a local server"
+depends = ["preflight"]
+run = "pnpm exec vite"
+
+[tasks.preview]
+description = "Build the app, then serve dist/ with vite preview, as a static host would; reads the network only as a local server"
+depends = ["build"]
+run = "pnpm exec vite preview"
+
+[tasks.size]
+description = "Print the build's raw, gzip, and brotli totals, a report with no budget"
+depends = ["build"]
+run = "node scripts/size.ts"
+
+[tasks."test:browser"]
+description = "Run the browser tier on the build in the pinned chrome-headless-shell"
+depends = ["preflight browser", "build"]
+run = "BROWSER_EXECUTABLE=$(mise which chrome-headless-shell) node --test 'test/browser/*.test.ts'"
+
+[tasks.check]
+description = "Run every check: lint, types, the unit tier, the build, its size, and the browser tier; reads no network; writes dist/"
+depends = ["lint", "types", "test:unit", "build", "size", "test:browser"]
+
+[tasks.currency]
+description = "Report every mise tool, package.json pin, and layer's tag behind its latest, exiting nonzero if any; reads the network"
+run = "scripts/currency.sh"
+quiet = true

@@ -14,7 +14,9 @@
 //     (the lifecycle configuration alone);
 //   - domain.go: defineDomain and mountDomain, the domain services (none)
 //     and the new command, whose leaves are the kinds of project, each
-//     its own package, such as internal/standalone;
+//     its own package, such as internal/standalone, and the inject
+//     command, whose leaves install a kind's web client into an existing
+//     project, such as internal/serviceapp's;
 //   - version.go: the version command, which declares no nodes and prints
 //     the main module's version, or (devel) when the binary carries none, as
 //     under go test.
