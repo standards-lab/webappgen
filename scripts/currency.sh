@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Prints `<where>: <item> <pin> -> <latest>` for the go directive's minor and any toolchain line,
-# each direct Go requirement, each mise tool, and each GitHub Actions pin behind its latest, and
-# exits 1 if any; prints nothing when all are current. Reads the network and writes nothing;
+# each direct Go requirement, each module the service-app kind pins, each mise tool, and each
+# GitHub Actions pin behind its latest, and exits 1 if any; prints nothing when all are current. Reads the network and writes nothing;
 # diagnostics go to stderr.
 # Adapted from go-cli-sdk-template (a4d314c): template/scripts/currency.sh, on one module, with a
 # toolchain line reported.
@@ -10,7 +10,9 @@
 # Each scan captures its command's output in a variable before reading it, so under set -e a scan
 # command that fails (a go list missing a go.sum entry) fails currency instead of reporting
 # nothing. The go directive follows the current Go minor, with no toolchain line, as the mise pin
-# selects the toolchain. Go requirements are checked within their major. The mise tools include
+# selects the toolchain. Go requirements are checked within their major. The service-app kind's
+# pins, its template and gonew's x/tools, are read from their constants by scripts/service-pins.sh
+# and checked against their modules' latest. The mise tools include
 # the starter's shared pins, so a tool reported here trails in a written project too; mise runs at
 # error level, as it warns on every run that a GitHub release has no assets. Each workflow's
 # actions, the release workflow's included, are checked against their repositories' latest
@@ -37,6 +39,13 @@ updates=$(go list -m -u -f \
 while read -r line; do
   [[ -z $line ]] || report "go.mod: $line"
 done <<<"$updates"
+
+pins=$(scripts/service-pins.sh)
+while read -r _ pin; do
+  [[ -n $pin ]] || continue
+  latest=$(go list -m -json "${pin%@*}@latest" | jq -r .Version)
+  [[ ${pin#*@} == "$latest" ]] || report "internal/serviceapp: ${pin%@*} ${pin#*@} -> $latest"
+done <<<"$pins"
 
 outdated=$(MISE_LOG_LEVEL=error mise outdated --bump --no-global --json |
   jq -r 'to_entries[] | "\(.key) \(.value.requested) -> \(.value.bump)"')

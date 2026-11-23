@@ -6,6 +6,7 @@ import (
 	"github.com/standards-lab/go-cli-sdk"
 	"github.com/standards-lab/go-core/graph"
 
+	"github.com/standards-lab/webappgen/internal/serviceapp"
 	"github.com/standards-lab/webappgen/internal/standalone"
 )
 
@@ -19,5 +20,5 @@ func newCommand() *cli.Command {
 	return (&cli.Command{
 		Name:    "new",
 		Summary: "Write a new web client project of one kind",
-	}).Add(standalone.Command(moduleVersion()))
+	}).Add(standalone.Command(moduleVersion()), serviceapp.Command())
 }

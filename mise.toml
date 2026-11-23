@@ -36,8 +36,8 @@ hide = true
 run = "scripts/preflight.sh"
 
 [tasks.install]
-description = "Install the pins, the module's requirements, and the starter's packages into .cache/pnpm-store; reads the network"
-run = ["mise install", "go mod download", "scripts/fetch-store.sh"]
+description = "Install the pins, the module's requirements, the starter's packages into .cache/pnpm-store, and the service-app kind's pins and the template's requirements into the module cache; reads the network"
+run = ["mise install", "go mod download", "scripts/fetch-store.sh", "scripts/fetch-service.sh"]
 
 [tasks.vet]
 description = "Build, vet, and check the format, fixes, and go.mod, the integration suite included; writes nothing"

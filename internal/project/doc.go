@@ -5,4 +5,6 @@
 // fetched: the trees are embedded in the binary, so one version names both
 // the CLI and what it writes. [Install] then runs the written project's
 // install steps, which read the network, when a kind's --install asks.
+// [CheckDir] is the check every kind makes of the directory it writes
+// into, and [WriteNextSteps] prints what is left to run there.
 package project
