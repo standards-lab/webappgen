@@ -61,9 +61,20 @@ and port under the `--base` path; the check runs neither. `mise run currency` re
 package, or layer pin behind its latest; it holds typescript to typescript-eslint's range and
 rolldown to vite's.
 
-The app's page takes web-foundation's full entry, so its Settings menu, opened by the header's
-button or the S key, offers every built-in color, space, and type profile, and the reader's
-stored choice applies before first paint.
+The written page is web-foundation's application page, laid out by its `layout.css`: a header
+with the app's title and its actions, and a main column where the router mounts each view. The
+header holds two buttons, drawn with web-icons' glyphs:
+
+- **Help**, on the ? key, opens a dialog listing the page's keyboard shortcuts
+  (web-components' `sl-shortcuts`).
+- **Settings**, on the S key, opens a dialog to choose the color profile (zen, github,
+  catppuccin, or everforest), the space profile (regular or compact), and the type profile (mono
+  or sans) (web-components' `sl-settings`). A choice applies and is stored at once, and the stored
+  choice applies before first paint on every later visit.
+
+Each dialog closes on its Close button or Escape. The keys are ignored inside text fields. The
+written project's own `README.md` documents its tasks, its config, deploying it, and how it is
+built.
 
 ## Deploy a standalone build
 
@@ -81,6 +92,9 @@ stored choice applies before first paint.
 - **CLI**: `version`, and `new` with one leaf per kind of app; usage errors name the fix.
 - **Standalone kind**: `new standalone <dir>` with `--name`, `--title`, `--base`, `--api-base`,
   and `--install`.
+- **Written project**: the application page with Help and Settings, a home and a not-found
+  view, its config read from `config.json` or `#app-config`, its own `README.md`, and a check
+  that runs the unit and browser tiers on the build.
 
 ## Contributing
 

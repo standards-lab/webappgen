@@ -23,7 +23,7 @@ the `standard` task points them at the Web Elemental standard once it is founded
 - The app's entry is its composition root: it reads the config and wires the router over the
   page, and no view constructs what it uses (`architecture/principles/composition-root.md`).
 - The app binds single keys only, for critical operations, never chords, and ignores them inside
-  text fields; a component binds none (`architecture/principles/downward-dependencies.md`).
+  text fields; a component binds none.
 
 ## Go CLI
 
@@ -31,7 +31,7 @@ the `standard` task points them at the Web Elemental standard once it is founded
   (`architecture/standards/go-elemental/principles/dependencies.md`).
 - `internal/app`'s graph holds configuration as nodes, and each command builds only the nodes it
   declares with `Use`; a kind's leaf declares none
-  (`architecture/standards/go-elemental/principles/lifecycle-and-context.md`).
+  (`architecture/standards/go-elemental/principles/cli-applications.md`).
 - A leaf checks its arguments and flags in `Args` and `Validate`, which build nothing, and help
   and usage errors exit 2 (`architecture/standards/go-elemental/principles/cli-applications.md`).
 - The module is rooted at the repository's top, with `cmd/webappgen` and `internal/app`'s layer
@@ -56,5 +56,4 @@ the `standard` task points them at the Web Elemental standard once it is founded
 - A starter file keeps its provenance line in the project it is written into, so a written file
   names its source as the starter's does (`architecture/principles/comments.md`).
 - Tests are TypeScript run under Node's type stripping, erasable syntax only, type-checked by
-  `tsconfig.test.json`; browser-served fixtures stay `.js`
-  (`architecture/principles/minimal-footprint.md`).
+  `tsconfig.test.json`; browser-served fixtures stay `.js`.
